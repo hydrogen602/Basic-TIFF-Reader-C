@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../header.h"
+#include "header.h"
 #include "tiffReader.h"
 
 #define _printData printf(": %d\n", (t->TagList + i)->DataOffset)

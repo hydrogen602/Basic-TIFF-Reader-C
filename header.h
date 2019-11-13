@@ -1,8 +1,5 @@
-
 #ifndef HEADER_H_
 #define HEADER_H_
-
-#include "array.h"
 
 #define true 1
 #define false 0

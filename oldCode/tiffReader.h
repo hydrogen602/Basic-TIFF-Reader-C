@@ -1,4 +1,3 @@
-
 #ifndef tiffReader_H_
 #define tiffReader_H_
 
