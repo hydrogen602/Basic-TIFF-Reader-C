@@ -47,6 +47,24 @@ typedef double DOUBLE;
 #define type_11 FLOAT
 #define type_12 DOUBLE
 
+#define NUMBER_OF_TYPES 12
+
+// index i should return sizeof type i
+const unsigned long sizeOfTypeLookupTable[13] = { 0, 
+    sizeof(type_1),
+    sizeof(type_2),
+    sizeof(type_3),
+    sizeof(type_4),
+    sizeof(type_5),
+    sizeof(type_6),
+    sizeof(type_7),
+    sizeof(type_8),
+    sizeof(type_9),
+    sizeof(type_10),
+    sizeof(type_11),
+    sizeof(type_12),
+};
+
 /* === Classes === */
 
 // Bi-level and Gray-scale

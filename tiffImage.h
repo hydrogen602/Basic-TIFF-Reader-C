@@ -18,7 +18,6 @@ typedef struct _GrayScaleTiffImage {
     size_t pixelCount;
 
     int requiredTags[GrayScaleTagCount] = GrayScaleTags;
-
 } tiffImageGS_t;
 
 typedef struct _ColorTiffImage {
