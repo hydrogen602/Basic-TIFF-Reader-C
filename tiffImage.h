@@ -9,21 +9,15 @@
 
 typedef unsigned char pixel_t;
 
-typedef struct _GrayScaleTiffImage {
+const int grayScaleTags[] = GRAY_SCALE_TAGS;
+const int rgbTags[] = RGB_TAGS;
+
+typedef struct _GenericTiffImage {
     tiffHead_t header;
     tiffIFDTag_t* ifds;
     size_t ifdsCount;
 
     pixel_t* pixels;
-    size_t pixelCount;
-
-    int requiredTags[GrayScaleTagCount] = GrayScaleTags;
-} tiffImageGS_t;
-
-typedef struct _ColorTiffImage {
-    tiffHead_t header;
-    tiffIFDTag_t* ifds;
-    size_t ifdsCount;
 
     pixel_t* pixelsRed;
     pixel_t* pixelsGreen;
@@ -31,7 +25,7 @@ typedef struct _ColorTiffImage {
 
     size_t pixelCount;
 
-    int requiredTags[RGBTagCount] = RGBTags;
-} tiffImageRGB_t;
+    int* requiredTags;
+} tiffImage_t;
 
 #endif

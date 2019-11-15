@@ -18,11 +18,11 @@ typedef struct _RationalNum {
     LONG denom;
 } RATIONAL;
 
-#define type_1 BYTE
-#define type_2 ASCII
-#define type_3 SHORT
-#define type_4 LONG
-#define type_5 RATIONAL
+#define TYPE_1 BYTE
+#define TYPE_2 ASCII
+#define TYPE_3 SHORT
+#define TYPE_4 LONG
+#define TYPE_5 RATIONAL
 
 // TIFF 6.0 revision
 
@@ -39,46 +39,46 @@ typedef struct _SignedRationalNum {
 typedef float FLOAT;
 typedef double DOUBLE;
 
-#define type_6 SBYTE
-#define type_7 UNDEFINE
-#define type_8 SSHORT
-#define type_9 SLONG
-#define type_10 SRATIONAL
-#define type_11 FLOAT
-#define type_12 DOUBLE
+#define TYPE_6 SBYTE
+#define TYPE_7 UNDEFINE
+#define TYPE_8 SSHORT
+#define TYPE_9 SLONG
+#define TYPE_10 SRATIONAL
+#define TYPE_11 FLOAT
+#define TYPE_12 DOUBLE
 
 #define NUMBER_OF_TYPES 12
 
 // index i should return sizeof type i
 const unsigned long sizeOfTypeLookupTable[13] = { 0, 
-    sizeof(type_1),
-    sizeof(type_2),
-    sizeof(type_3),
-    sizeof(type_4),
-    sizeof(type_5),
-    sizeof(type_6),
-    sizeof(type_7),
-    sizeof(type_8),
-    sizeof(type_9),
-    sizeof(type_10),
-    sizeof(type_11),
-    sizeof(type_12),
+    sizeof(TYPE_1),
+    sizeof(TYPE_2),
+    sizeof(TYPE_3),
+    sizeof(TYPE_4),
+    sizeof(TYPE_5),
+    sizeof(TYPE_6),
+    sizeof(TYPE_7),
+    sizeof(TYPE_8),
+    sizeof(TYPE_9),
+    sizeof(TYPE_10),
+    sizeof(TYPE_11),
+    sizeof(TYPE_12),
 };
 
 /* === Classes === */
 
 // Bi-level and Gray-scale
-#define GrayScaleTags       { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 }
-#define GrayScaleTagCount 13
+#define GRAY_SCALE_TAGS     { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 }
+#define GRAY_SCALE_TAGS_COUNT 13
 
-#define PaletteColorTags    { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 }
-#define PaletteColorTagCount 14
+#define PALETTE_COLOR_TAGS  { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 }
+#define PALETTE_COLOR_TAGS_COUNT 14
 
-#define RGBTags             { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 }
-#define RGBTagCount 14
+#define RGB_TAGS            { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 }
+#define RGB_TAGS_COUNT 14
 
-#define YCbCrTags           { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 }
-#define YCbCrTagCount 17
+#define YCbCr_TAGS          { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 }
+#define YCbCr_TAGS_COUNT 17
 
 /* === Define Tag IDs === */
 
@@ -92,14 +92,14 @@ const unsigned long sizeOfTypeLookupTable[13] = { 0,
 #define Compression 259
 
 /* === <Types for Compression> === */
-#define Uncompressed 1
-#define CCITT_1D 2
-#define CCITT_Group_3 3
-#define CCITT_Group_4 4
-#define LZW 5
-#define JPEG 6
-#define Uncompressed 32771
-#define Packbits 32773
+#define C_Uncompressed 1
+#define C_CCITT_1D 2
+#define C_CCITT_Group_3 3
+#define C_CCITT_Group_4 4
+#define C_LZW 5
+#define C_JPEG 6
+//#define C_Uncompressed 32771 // obsolete in later versions of tiff
+#define C_Packbits 32773
 /* === </Types for Compression> === */
 
 #define Copyright 33432
@@ -140,14 +140,14 @@ const unsigned long sizeOfTypeLookupTable[13] = { 0,
 #define PhotometricInterpretation 262
 
 /* === <Types for PhotometricInterpretation> === */
-#define WhiteIsZero 0
-#define BlackIsZero 1
-#define RGB 2
-#define RGB_Palette 3
-#define Tranparency_Mask 4
-#define CMYK 5
-#define YCbCr 6
-#define CIELab 8
+#define PI_WhiteIsZero 0
+#define PI_BlackIsZero 1
+#define PI_RGB 2
+#define PI_RGB_Palette 3
+#define PI_Tranparency_Mask 4
+#define PI_CMYK 5
+#define PI_YCbCr 6
+#define PI_CIELab 8
 /* === </Types for PhotometricInterpretation> === */
 
 #define PlanarConfiguration 284

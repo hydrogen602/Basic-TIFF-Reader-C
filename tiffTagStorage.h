@@ -53,7 +53,7 @@ typedef struct _TiffHeader
 // functions def
 
 // new dataTag and allocates memory for data
-tiffDataTag_t dataTag(WORD tagId, WORD dataType, size_t dataTypeSize, size_t dataCount);
+tiffDataTag_t dataTag(WORD tagId, WORD dataType, size_t dataCount);
 
 // frees allocated memory of dataTag
 void freeDataTag(tiffDataTag_t t);
