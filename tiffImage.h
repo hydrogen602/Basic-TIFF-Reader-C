@@ -7,25 +7,40 @@
 #include "tiffTagStorage.h"
 #include "tiffFormat.h"
 
+#define GRAY_SCALE 1
+#define RGB 2
+
+typedef int imgType;
+
 typedef unsigned char pixel_t;
 
 const int grayScaleTags[] = GRAY_SCALE_TAGS;
 const int rgbTags[] = RGB_TAGS;
 
-typedef struct _GenericTiffImage {
-    tiffHead_t header;
-    tiffIFDTag_t* ifds;
-    size_t ifdsCount;
+// represents a tiff image. One tiff file can contain multiple images
+typedef struct _GenericTiffSubFile { 
+    DWORD nextIFDOffset; // Offset to next IFD
 
-    pixel_t* pixels;
+    size_t tagCount;    // length of tag array
+    tiffDataTag_t* tags; // tags
 
-    pixel_t* pixelsRed;
+    pixel_t* pixels; // gray scale
+    // OR
+    pixel_t* pixelsRed; // rgb
     pixel_t* pixelsGreen;
     pixel_t* pixelsBlue;
 
     size_t pixelCount;
 
-    int* requiredTags;
+    imgType type; // GRAY_SCALE or RGB
+
 } tiffImage_t;
+
+// represents a tiff file
+typedef struct _TiffFile { 
+    tiffHead_t header;
+    tiffImage_t* images;
+    size_t imagesCount;
+} tiffFile_t;
 
 #endif

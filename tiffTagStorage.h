@@ -18,11 +18,12 @@ typedef struct _TifTagData
     // but void ptrs don't like arithmetic being done on them and thus its a unsigned char
 } tiffDataTag_t;
 
-typedef struct _TifIfdData
-{
-    size_t dataCount;    // length of tag array
-    tiffDataTag_t* tags;  // tag array
-} tiffIFDTag_t;
+// typedef struct _TifIfdData
+// {
+//     size_t dataCount;    // length of tag array
+//     tiffDataTag_t* tags; // tag array
+//     DWORD nextIFDOffset; // Offset to next IFD
+// } tiffIFDTag_t;
 
 /* === Tiff Tag Data as found in file === */
 
