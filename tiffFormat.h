@@ -9,7 +9,7 @@
 // Tiff tag data types
 
 typedef unsigned char BYTE; // -> BYTE
-typedef char * ASCII; // null-terminated
+typedef unsigned char ASCII; // null-terminated
 typedef unsigned short SHORT; // -> WORD
 typedef unsigned int LONG; // -> DWORD
 
@@ -18,11 +18,11 @@ typedef struct _RationalNum {
     LONG denom;
 } RATIONAL;
 
-#define TYPE_1 BYTE
-#define TYPE_2 ASCII
-#define TYPE_3 SHORT
-#define TYPE_4 LONG
-#define TYPE_5 RATIONAL
+#define BYTE_TypeID 1
+#define ASCII_TypeID 2
+#define SHORT_TypeID 3
+#define LONG_TypeID 4
+#define RATIONAL_TypeID 5
 
 // TIFF 6.0 revision
 
@@ -39,45 +39,45 @@ typedef struct _SignedRationalNum {
 typedef float FLOAT;
 typedef double DOUBLE;
 
-#define TYPE_6 SBYTE
-#define TYPE_7 UNDEFINE
-#define TYPE_8 SSHORT
-#define TYPE_9 SLONG
-#define TYPE_10 SRATIONAL
-#define TYPE_11 FLOAT
-#define TYPE_12 DOUBLE
+#define SBYTE_TypeID 6
+#define UNDEFINE_TypeID 7
+#define SSHORT_TypeID 8
+#define SLONG_TypeID 9
+#define SRATIONAL_TypeID 10
+#define FLOAT_TypeID 11
+#define DOUBLE_TypeID 12
 
 #define NUMBER_OF_TYPES 12
 
 // index i should return sizeof type i
-const unsigned long sizeOfTypeLookupTable[13] = { 0, 
-    sizeof(TYPE_1),
-    sizeof(TYPE_2),
-    sizeof(TYPE_3),
-    sizeof(TYPE_4),
-    sizeof(TYPE_5),
-    sizeof(TYPE_6),
-    sizeof(TYPE_7),
-    sizeof(TYPE_8),
-    sizeof(TYPE_9),
-    sizeof(TYPE_10),
-    sizeof(TYPE_11),
-    sizeof(TYPE_12),
+const unsigned long SIZEOF_TYPE_LOOKUP_TABLE[13] = { 0, 
+    sizeof(BYTE),
+    sizeof(ASCII),
+    sizeof(SHORT),
+    sizeof(LONG),
+    sizeof(RATIONAL),
+    sizeof(SBYTE),
+    sizeof(UNDEFINE),
+    sizeof(SSHORT),
+    sizeof(SLONG),
+    sizeof(SRATIONAL),
+    sizeof(FLOAT),
+    sizeof(DOUBLE),
 };
 
 /* === Classes === */
 
 // Bi-level and Gray-scale
-#define GRAY_SCALE_TAGS     { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 }
+const int GRAY_SCALE_TAGS[] = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 };
 #define GRAY_SCALE_TAGS_COUNT 13
 
-#define PALETTE_COLOR_TAGS  { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 }
+const int PALETTE_COLOR_TAGS[] = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 };
 #define PALETTE_COLOR_TAGS_COUNT 14
 
-#define RGB_TAGS            { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 }
+const int RGB_TAGS[] = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 };
 #define RGB_TAGS_COUNT 14
 
-#define YCbCr_TAGS          { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 }
+const int YCbCr_TAGS = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 };
 #define YCbCr_TAGS_COUNT 17
 
 /* === Define Tag IDs === */

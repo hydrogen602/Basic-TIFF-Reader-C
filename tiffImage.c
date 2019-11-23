@@ -6,6 +6,14 @@
 #include "tiffTagStorage.h"
 #include "tiffFormat.h"
 
+size_t getTypeSizeOf(int typeId) {
+    if (typeId < 0 || typeId >= NUMBER_OF_TYPES + 1) {
+        fprintf("ArrayIndexOutOfBoudsException: %d\n", typeId);
+        return -1;
+    }
+    return SIZEOF_TYPE_LOOKUP_TABLE[typeId];
+}
+
 tiffImage_t makeImage(imgType iType) {
     tiffImage_t img;
 
@@ -40,7 +48,7 @@ bool isValidImage(tiffImage_t* img) {
     size_t requiredTagLength = 0;
 
     if (img->type == GRAY_SCALE) {
-        requiredTags = grayScaleTags;
+        requiredTags = GRAY_SCALE_TAGS;
         requiredTagLength = GRAY_SCALE_TAGS_COUNT;
 
         if (img->pixels == NULL) return false;
@@ -49,7 +57,7 @@ bool isValidImage(tiffImage_t* img) {
         if (img->pixelsRed != NULL) return false;
     }
     else if (img->type == RGB) {
-        requiredTags = rgbTags;
+        requiredTags = RGB_TAGS;
         requiredTagLength = RGB_TAGS_COUNT;
 
         if (img->pixels != NULL) return false;

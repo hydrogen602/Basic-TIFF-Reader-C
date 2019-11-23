@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#define indexData(dataTag, index) *(((dataTag)->data) + ((index) * SIZEOF_TYPE_LOOKUP_TABLE[(dataTag)->dataType]))
+
 // Defines how to store tiff tags in memory
 
 typedef unsigned short WORD; // 2 bytes
@@ -12,7 +14,6 @@ typedef struct _TifTagData
 {
     WORD tagId;          /* The tag identifier  */
     WORD dataType;       // type id
-    size_t dataTypeSize; // size of type
     size_t dataCount;    // length of array
     unsigned char *data; // data, use malloc & free, kinda like a void ptr
     // but void ptrs don't like arithmetic being done on them and thus its a unsigned char
@@ -44,6 +45,7 @@ typedef struct _TifTagData
 // 	DWORD   nextIFDOffset;    /* Offset to next IFD  */
 // } TIFIFD;
 
+// defines a tiff header
 typedef struct _TiffHeader
 {
 	WORD    identifier;  /* Byte-order Identifier */
@@ -53,7 +55,7 @@ typedef struct _TiffHeader
 
 // functions def
 
-// new dataTag and allocates memory for data
+// creates new dataTag and allocates memory for data
 tiffDataTag_t dataTag(WORD tagId, WORD dataType, size_t dataCount);
 
 // frees allocated memory of dataTag

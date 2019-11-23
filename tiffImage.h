@@ -14,9 +14,6 @@ typedef int imgType;
 
 typedef unsigned char pixel_t;
 
-const int grayScaleTags[] = GRAY_SCALE_TAGS;
-const int rgbTags[] = RGB_TAGS;
-
 // represents a tiff image. One tiff file can contain multiple images
 typedef struct _GenericTiffSubFile { 
     DWORD nextIFDOffset; // Offset to next IFD
