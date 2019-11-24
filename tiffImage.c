@@ -8,18 +8,18 @@
 
 // index i should return sizeof type i
 const unsigned long SIZEOF_TYPE_LOOKUP_TABLE[13] = { 0, 
-    sizeof(BYTE),
-    sizeof(ASCII),
-    sizeof(SHORT),
-    sizeof(LONG),
-    sizeof(RATIONAL),
-    sizeof(SBYTE),
-    sizeof(UNDEFINE),
-    sizeof(SSHORT),
-    sizeof(SLONG),
-    sizeof(SRATIONAL),
-    sizeof(FLOAT),
-    sizeof(DOUBLE),
+    sizeof(BYTE),       // 1
+    sizeof(ASCII),      // 1
+    sizeof(SHORT),      // 2
+    sizeof(LONG),       // 4
+    sizeof(RATIONAL),   // 8 (4 + 4)
+    sizeof(SBYTE),      // 1
+    sizeof(UNDEFINE),   // 1
+    sizeof(SSHORT),     // 2
+    sizeof(SLONG),      // 4
+    sizeof(SRATIONAL),  // 8 (4 + 4)
+    sizeof(FLOAT),      // 4
+    sizeof(DOUBLE),     // 8
 };
 
 const int required_gray_tags[] = GRAY_SCALE_TAGS;

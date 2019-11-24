@@ -6,6 +6,7 @@
 #include "tiffImage.h"
 
 #define indexData(dataTag, index) *(((dataTag)->data) + ((index) * getTypeSizeOf((dataTag)->dataType)))
+#define indexDataPtr(dataTag, index) (((dataTag)->data) + ((index) * getTypeSizeOf((dataTag)->dataType)))
 
 // https://www.fileformat.info/format/tiff/egff.htm
 
