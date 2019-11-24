@@ -7,6 +7,8 @@
 #include "tiffTagStorage.h"
 #include "tiffImage.h"
 
+// apparently macros can be define with -D name
+
 bool _tiffReader_isProperHeader(uint16_t identifier, uint16_t version) {
 
     if (identifier != TIFF_BIG_ENDIAN && identifier != TIFF_LITTLE_ENDIAN) {
@@ -185,19 +187,24 @@ int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fil
     positionInMemory += sizeof(int);
     
     if (t->byteOrder == TIFF_BIG_ENDIAN) {
+        #ifdef DEBUG    
         printf("got order: big endian\n");
         printf("got version: %x\n", __builtin_bswap16(version));
+        #endif
     }
     else if (t->byteOrder == TIFF_LITTLE_ENDIAN) {
+        #ifdef DEBUG
         printf("got order: little endian\n");
         printf("got version: %x\n", version);
+        #endif
     }
     else {
         assertEx(false, "Invalid State: byteOrder is not correct: %ud\n", t->byteOrder);
     }
 
-    
+    #ifdef DEBUG
     printf("got offset: %x\n", ifdOffset);
+    #endif
 
     t->images = malloc(sizeof(tiffImage_t) * 1);
     t->imagesCount = 1; // only supports 1 image per file for now
@@ -214,19 +221,22 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
     t->tagCount = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
     offset += sizeof(short);
 
-    printf("Number of tags: %lu\n", t->tagCount);
-
     // remember to free this memory, len = t.NumDirEntries
     t->tags = malloc(t->tagCount * sizeof(tiffDataTag_t));
     assertNotNull(t->tags, "Failed to allocate memory\n");
 
+    #ifdef DEBUG
+    printf("Number of tags: %lu\n", t->tagCount);
     printf("Offset: %d\n", offset);
+    #endif
 
     for (int i = 0; i < t->tagCount; i++) {
         tiffDataTag_t * tagPtr = t->tags + i;
 
         WORD tagId = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+        #ifdef DEBUG
         printf("TagId: %d\n", tagId);
+        #endif
         offset += sizeof(WORD);
         
         WORD dataType = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
@@ -239,7 +249,9 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         // NOTE: dataTag calls malloc, must be freed with freeDataTag()
         *(tagPtr) = newDataTag(tagId, dataType, dataCount);
         
+        #ifdef DEBUG
         printf("Now creating data tag with id=%u, dataType=%u, dataCount=%u\n", tagId, dataType, dataCount);
+        #endif
 
         /* === get data === */
 
@@ -251,6 +263,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
             
             memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint16_t));
 
+            #ifdef DEBUG
             if (tagPtr->tagId == 259) {
                 printf("addr = %x\n", tagPtr->data);
                 short n2;
@@ -259,27 +272,35 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
             }
 
             printf("%u\n", n);
+            #endif
         }
 
         // four bytes types
         else if ((dataType == LONG_TypeID || dataType == SLONG_TypeID) && tagPtr->dataCount == 1) {
             uint32_t n = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
             memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint32_t));
+
+            #ifdef DEBUG
             printf("%u\n", n);
+            #endif
         }
 
         // one byte types
         else if ((dataType == BYTE_TypeID || dataType == SBYTE_TypeID || dataType == UNDEFINE_TypeID) && tagPtr->dataCount == 1) {
             uint8_t n = _tiffReader_read1ByteFromBuffer(byteOrder, offset, buffer, fileSize);
             memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint8_t));
+
+            #ifdef DEBUG
             printf("%u\n", n);
+            #endif
         }
 
         // data located elsewhere
         else {
             DWORD tmpOffset = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
 
-            if (tagPtr->tagId == 34675) {
+            #ifdef DEBUG
+            if (tagPtr->tagId == 34675) { // embeded color profile
                 printf("INFO:\n");
                 printf("\tsizeof(data) = %lu\n", getTypeSizeOf(tagPtr->dataType));
                 printf("\tdata count   = %lu\n", tagPtr->dataCount);
@@ -290,6 +311,8 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
             }
 
             printf("data point = ");
+            #endif
+
             for (int index = 0; index < tagPtr->dataCount; ++index) {
                 /* the formats and their sizes
                     sizeof(BYTE),       // 1
@@ -308,46 +331,69 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 
                 if (getTypeSizeOf(dataType) == 1) {
                    uint8_t n = _tiffReader_read1ByteFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
+
+                   #ifdef DEBUG
                    if (dataType == ASCII_TypeID || dataType == BYTE_TypeID) {
                        printf("%c", n);
                    }
                    else {
                        printf("%u, ", n);
                    }
+                   #endif
                    
                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int8_t));
                 }
 
                 else if (getTypeSizeOf(dataType) == 2) {
                    uint16_t n = _tiffReader_read2BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
+
+                   #ifdef DEBUG
                    printf("%u, ", n);
+                   #endif
+
                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int16_t));
                 }
 
                 else if (getTypeSizeOf(dataType) == 4) {
                    uint32_t n = _tiffReader_read4BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
-                   printf("%u, ", n);
-                   memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int32_t));
+
+                    #ifdef DEBUG
+                    printf("%u, ", n);
+                    #endif
+
+                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int32_t));
                 }
 
                 else if (dataType == RATIONAL_TypeID || dataType == SRATIONAL_TypeID) {
                     RATIONAL r; // eh whatever the sign
                     r.num = _tiffReader_read4BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
                     r.denom = _tiffReader_read4BytesFromBuffer(byteOrder, tmpOffset + sizeof(DWORD), buffer, fileSize);
+
+                    #ifdef DEBUG
                     printf("%u / %u, ", r.num, r.denom);
+                    #endif
+
                     memcpy(indexDataPtr(tagPtr, index), &r, sizeof(RATIONAL));
                 }
                 else if (dataType == DOUBLE_TypeID) {
                     uint64_t n = _tiffReader_read8BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
+
+                    #ifdef DEBUG
                     printf("%lld, ", n);
+                    #endif
+
                     memcpy(indexDataPtr(tagPtr, index), &n, sizeof(DOUBLE));
                 }
 
                 tmpOffset += getTypeSizeOf(dataType);
             }
+            #ifdef DEBUG
             putchar('\n');
+            #endif
         }
+        #ifdef DEBUG
         tagPrintDebug(tagPtr);
+        #endif
 
         offset += sizeof(DWORD);
 
@@ -379,7 +425,7 @@ int main(void) {
     const char* filename = "test100x100.tiff";
 
     int sizeofImage = sizeofFile(filename);
-    assert(sizeofImage > 0, "");
+    assert(sizeofImage > 0, "image not a real size");
 
     // sizeofImage is a byte count and length of buffer
     unsigned char * buffer = malloc(sizeofImage);

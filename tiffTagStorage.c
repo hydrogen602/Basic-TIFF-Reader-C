@@ -40,12 +40,6 @@ void tagPrintDebug(tiffDataTag_t *t) {
             short n;
             memcpy(&n, t->data, sizeof(short));
 
-            putchar('\n');
-            printf("addr = %x\n", t->data);
-            for (int i = -10; i < 10; ++i) {
-                printf("%x ", *(t->data + i));
-            }
-            putchar('\n');
             switch (n)
             {
                 case 1: printf("Uncompressed\n"); break;
