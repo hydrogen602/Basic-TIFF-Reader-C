@@ -9,9 +9,11 @@ int sizeofFile(const char* filename);
 
 int fileReader(const char* filename, unsigned char* buffer, unsigned int fileSize);
 
-short readShortFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize);
+uint8_t read1ByteFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize);
 
-int readIntFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize);
+uint16_t read2BytesFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize);
+
+uint32_t read4BytesFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize);
 
 int parseHeader(tiffHead_t* t, unsigned char* buffer, unsigned int fileSize);
 

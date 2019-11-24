@@ -40,4 +40,12 @@ typedef struct _TiffFile {
     size_t imagesCount;
 } tiffFile_t;
 
+size_t getTypeSizeOf(int typeId);
+
+tiffImage_t makeImage(imgType iType);
+
+bool isValidImage(tiffImage_t* img);
+
+tiffFile_t makeFile(tiffImage_t* images, size_t imagesCount);
+
 #endif

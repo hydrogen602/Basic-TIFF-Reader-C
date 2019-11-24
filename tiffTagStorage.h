@@ -7,43 +7,22 @@
 
 // Defines how to store tiff tags in memory
 
-typedef unsigned short WORD; // 2 bytes
-typedef unsigned int DWORD; // 4 bytes
+typedef uint16_t WORD; // 2 bytes
+typedef uint32_t DWORD; // 4 bytes
+
 
 typedef struct _TifTagData
 {
     WORD tagId;          /* The tag identifier  */
     WORD dataType;       // type id
     size_t dataCount;    // length of array
-    unsigned char *data; // data, use malloc & free, kinda like a void ptr
+
+    // data, use malloc & free, kinda like a void ptr
+    unsigned char *data; 
     // but void ptrs don't like arithmetic being done on them and thus its a unsigned char
 } tiffDataTag_t;
 
-// typedef struct _TifIfdData
-// {
-//     size_t dataCount;    // length of tag array
-//     tiffDataTag_t* tags; // tag array
-//     DWORD nextIFDOffset; // Offset to next IFD
-// } tiffIFDTag_t;
-
-/* === Tiff Tag Data as found in file === */
-
 // https://www.fileformat.info/format/tiff/egff.htm
-
-// typedef struct _TifTag
-// {
-// 	WORD    tagId;       /* The tag identifier  */
-// 	WORD    dataType;    /* The scalar type of the data items  */
-// 	DWORD   dataCount;   /* The number of items in the tag data  */
-// 	DWORD   dataOffset;  /* The byte offset to the data items  */
-// } TIFTAG;
-
-// typedef struct _TifIfd
-// {
-// 	WORD    numDirEntries;    /* Number of Tags in IFD  */
-// 	TIFTAG* tagList;           /* Array of Tags  */
-// 	DWORD   nextIFDOffset;    /* Offset to next IFD  */
-// } TIFIFD;
 
 // defines a tiff header
 typedef struct _TiffHeader
@@ -56,9 +35,9 @@ typedef struct _TiffHeader
 // functions def
 
 // creates new dataTag and allocates memory for data
-tiffDataTag_t dataTag(WORD tagId, WORD dataType, size_t dataCount);
+tiffDataTag_t newDataTag(WORD tagId, WORD dataType, size_t dataCount);
 
 // frees allocated memory of dataTag
-void freeDataTag(tiffDataTag_t t);
+void freeDataTag(tiffDataTag_t *t);
 
 #endif

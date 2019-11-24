@@ -58,38 +58,50 @@ int fileReader(const char* filename, unsigned char* buffer, unsigned int fileSiz
     return 0;
 }
 
-short readShortFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
-    if (offset + sizeof(short) >= fileSize) {
-        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(short));
+uint8_t read1ByteFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+    if (offset + sizeof(uint8_t) >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint8_t));
         exit(1);
     }
 
-    short result;
+    uint8_t result = *(buffer + offset);
+    // no byteswapping to do cause it's one byte
+
+    return result;   
+}
+
+uint16_t read2BytesFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+    if (offset + sizeof(uint16_t) >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint16_t));
+        exit(1);
+    }
+
+    uint16_t result;
     if (littleEndian) {
-        memcpy(&result, buffer + offset, sizeof(short));
+        memcpy(&result, buffer + offset, sizeof(uint16_t));
     }
     else {
-        short tmp;
-        memcpy(&tmp, buffer + offset, sizeof(short));
+        uint16_t tmp;
+        memcpy(&tmp, buffer + offset, sizeof(uint16_t));
         result = __builtin_bswap16(tmp);        
     }
 
     return result;
 }
 
-int readIntFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
-    if (offset + sizeof(int) >= fileSize) {
-        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(int));
+uint32_t read4BytesFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+    if (offset + sizeof(uint32_t) >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint32_t));
         exit(1);
     }
 
-    int result;
+    uint32_t result;
     if (littleEndian) {
-        memcpy(&result, buffer + offset, sizeof(int));
+        memcpy(&result, buffer + offset, sizeof(uint32_t));
     }
     else {
-        int tmp;
-        memcpy(&tmp, buffer + offset, sizeof(int));
+        uint32_t tmp;
+        memcpy(&tmp, buffer + offset, sizeof(uint32_t));
         result = __builtin_bswap32(tmp);        
     }
 
@@ -141,6 +153,12 @@ int parseHeader(tiffHead_t* t, unsigned char* buffer, unsigned int fileSize) {
     return 0;
 }
 
+void freeIFD(tiffImage_t* t) {
+    for (size_t i = 0; i < t->tagCount; ++i) {
+        freeDataTag(t->tags + i);
+    }
+}
+
 int parseIFD(tiffImage_t* t, bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
     // offset + buffer should be where the IFD is
     t->tagCount = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
@@ -155,35 +173,48 @@ int parseIFD(tiffImage_t* t, bool littleEndian, unsigned int offset, unsigned ch
     printf("Offset: %d\n", offset);
 
     for (int i = 0; i < t->tagCount; i++) {
-        
-        short tagId = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
-        printf("TagId: %d\n", tagId);
-        offset += sizeof(short);
-        
-        short dataType = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
-        offset += sizeof(short);
 
-        int dataCount = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
-        offset += sizeof(int);
+        WORD tagId = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
+        printf("TagId: %d\n", tagId);
+        offset += sizeof(WORD);
+        
+        WORD dataType = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
+        offset += sizeof(WORD);
+
+        DWORD dataCount = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
+        offset += sizeof(DWORD);
 
         // create data tag
         // NOTE: dataTag calls malloc, must be freed with freeDataTag()
-        *(t->tags + i) = dataTag(tagId, dataType, dataCount);
+        *(t->tags + i) = newDataTag(tagId, dataType, dataCount);
 
-        // assume that if sizeof data is < 4 bytes and there is only one piece of data, data will be stored in DataOffset
-        if ((t->tags + i)->dataCount == 1) {
-            if ((t->tags + i)->dataType) // fix???
-        }
-        if ((t->tags + i)->dataType == SHORT_TypeID && ) {
+        /* === get data === */
+
+        // assume that if sizeof data is < 4 bytes and there is only one piece of data, the data will be stored in DataOffset
+        
+        // two bytes types
+        if ((dataType == SHORT_TypeID || dataType == SSHORT_TypeID) && (t->tags + i)->dataCount == 1) {
             indexData(t->tags + i, 0) = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
         }
-        else if ((t->tags + i)->dataType == LONG_TypeID && (t->tags + i)->dataCount == 1) {
+
+        // four bytes types
+        else if ((dataType == LONG_TypeID || dataType == SLONG_TypeID) && (t->tags + i)->dataCount == 1) {
             indexData(t->tags + i, 0) = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
         }
 
-        offset += sizeof(int);
+        // one byte types
+        else if ((dataType == BYTE_TypeID || dataType == SBYTE_TypeID || dataType == UNDEFINE_TypeID) && (t->tags + i)->dataCount == 1) {
+            indexData(t->tags + i, 0) = readByteFromBuffer(littleEndian, offset, buffer, fileSize);
+        }
 
-        unsigned int tmpOffset = 0;
+        // data located elsewhere
+        else {
+            DWORD jmpAddress = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
+        }
+
+        offset += sizeof(DWORD);
+
+        
         
     }
 
@@ -207,7 +238,7 @@ int main(void) {
     assert(result == 0, "File Reading Failed\n");
 
     
-    TIFHEAD t;
+    tiffHead_t t;
     result = parseHeader(&t, buffer, sizeofImage);
     assert(result == 0, "Header Parsing Failed\n");
     

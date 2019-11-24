@@ -8,10 +8,10 @@
 
 // Tiff tag data types
 
-typedef unsigned char BYTE; // -> BYTE
-typedef unsigned char ASCII; // null-terminated
-typedef unsigned short SHORT; // -> WORD
-typedef unsigned int LONG; // -> DWORD
+typedef uint8_t BYTE; // -> BYTE
+typedef uint8_t ASCII; // null-terminated
+typedef uint16_t SHORT; // -> WORD
+typedef uint32_t LONG; // -> DWORD
 
 typedef struct _RationalNum {
     LONG num;
@@ -26,10 +26,10 @@ typedef struct _RationalNum {
 
 // TIFF 6.0 revision
 
-typedef signed char SBYTE;
-typedef unsigned char UNDEFINE;
-typedef signed short SSHORT;
-typedef signed int SLONG;
+typedef int8_t SBYTE;
+typedef uint8_t UNDEFINE;
+typedef int16_t SSHORT;
+typedef int32_t SLONG;
 
 typedef struct _SignedRationalNum {
     SLONG num;
