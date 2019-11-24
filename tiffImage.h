@@ -7,32 +7,15 @@
 #include "tiffTagStorage.h"
 #include "tiffFormat.h"
 
-typedef unsigned char pixel_t;
+#define GRAY_SCALE 1
+#define RGB 2
 
-typedef struct _GrayScaleTiffImage {
-    tiffHead_t header;
-    tiffIFDTag_t* ifds;
-    size_t ifdsCount;
+size_t getTypeSizeOf(int typeId);
 
-    pixel_t* pixels;
-    size_t pixelCount;
+tiffImage_t makeImage(imgType iType);
 
-    int requiredTags[GrayScaleTagCount] = GrayScaleTags;
+bool isValidImage(tiffImage_t* img);
 
-} tiffImageGS_t;
-
-typedef struct _ColorTiffImage {
-    tiffHead_t header;
-    tiffIFDTag_t* ifds;
-    size_t ifdsCount;
-
-    pixel_t* pixelsRed;
-    pixel_t* pixelsGreen;
-    pixel_t* pixelsBlue;
-
-    size_t pixelCount;
-
-    int requiredTags[RGBTagCount] = RGBTags;
-} tiffImageRGB_t;
+tiffFile_t makeFile(tiffImage_t* images, size_t imagesCount);
 
 #endif

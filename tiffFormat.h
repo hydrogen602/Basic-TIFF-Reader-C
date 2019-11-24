@@ -1,35 +1,44 @@
 #ifndef TIFF_FORMAT_H_
 #define TIFF_FORMAT_H_
 
+#define TIFF_LITTLE_ENDIAN 0x4949
+#define TIFF_BIG_ENDIAN 0x4d4d
+
+#define TIFF_VERSION 0x002a
+#define TIFF_VERSION_BYTEFLIP 0x2a00
+
 /*
  * Tag ID names and ID numbers are sourced from:
  * https://www.fileformat.info/format/tiff/egff.htm
  */
 
+typedef uint16_t WORD; // 2 bytes
+typedef uint32_t DWORD; // 4 bytes
+
 // Tiff tag data types
 
-typedef unsigned char BYTE; // -> BYTE
-typedef char * ASCII; // null-terminated
-typedef unsigned short SHORT; // -> WORD
-typedef unsigned int LONG; // -> DWORD
+typedef uint8_t BYTE; // -> BYTE
+typedef uint8_t ASCII; // null-terminated
+typedef uint16_t SHORT; // -> WORD
+typedef uint32_t LONG; // -> DWORD
 
 typedef struct _RationalNum {
     LONG num;
     LONG denom;
 } RATIONAL;
 
-#define type_1 BYTE
-#define type_2 ASCII
-#define type_3 SHORT
-#define type_4 LONG
-#define type_5 RATIONAL
+#define BYTE_TypeID 1
+#define ASCII_TypeID 2
+#define SHORT_TypeID 3
+#define LONG_TypeID 4
+#define RATIONAL_TypeID 5
 
 // TIFF 6.0 revision
 
-typedef signed char SBYTE;
-typedef unsigned char UNDEFINE;
-typedef signed short SSHORT;
-typedef signed int SLONG;
+typedef int8_t SBYTE;
+typedef uint8_t UNDEFINE;
+typedef int16_t SSHORT;
+typedef int32_t SLONG;
 
 typedef struct _SignedRationalNum {
     SLONG num;
@@ -39,28 +48,30 @@ typedef struct _SignedRationalNum {
 typedef float FLOAT;
 typedef double DOUBLE;
 
-#define type_6 SBYTE
-#define type_7 UNDEFINE
-#define type_8 SSHORT
-#define type_9 SLONG
-#define type_10 SRATIONAL
-#define type_11 FLOAT
-#define type_12 DOUBLE
+#define SBYTE_TypeID 6
+#define UNDEFINE_TypeID 7
+#define SSHORT_TypeID 8
+#define SLONG_TypeID 9
+#define SRATIONAL_TypeID 10
+#define FLOAT_TypeID 11
+#define DOUBLE_TypeID 12
+
+#define NUMBER_OF_TYPES 12
 
 /* === Classes === */
 
 // Bi-level and Gray-scale
-#define GrayScaleTags       { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 }
-#define GrayScaleTagCount 13
+#define GRAY_SCALE_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 }
+#define GRAY_SCALE_TAGS_COUNT 13
 
-#define PaletteColorTags    { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 }
-#define PaletteColorTagCount 14
+#define PALETTE_COLOR_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 }
+#define PALETTE_COLOR_TAGS_COUNT 14
 
-#define RGBTags             { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 }
-#define RGBTagCount 14
+#define RGB_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 }
+#define RGB_TAGS_COUNT 14
 
-#define YCbCrTags           { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 }
-#define YCbCrTagCount 17
+#define  YCbCr_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 }
+#define YCbCr_TAGS_COUNT 17
 
 /* === Define Tag IDs === */
 
@@ -74,14 +85,14 @@ typedef double DOUBLE;
 #define Compression 259
 
 /* === <Types for Compression> === */
-#define Uncompressed 1
-#define CCITT_1D 2
-#define CCITT_Group_3 3
-#define CCITT_Group_4 4
-#define LZW 5
-#define JPEG 6
-#define Uncompressed 32771
-#define Packbits 32773
+#define C_Uncompressed 1
+#define C_CCITT_1D 2
+#define C_CCITT_Group_3 3
+#define C_CCITT_Group_4 4
+#define C_LZW 5
+#define C_JPEG 6
+//#define C_Uncompressed 32771 // obsolete in later versions of tiff
+#define C_Packbits 32773
 /* === </Types for Compression> === */
 
 #define Copyright 33432
@@ -122,14 +133,14 @@ typedef double DOUBLE;
 #define PhotometricInterpretation 262
 
 /* === <Types for PhotometricInterpretation> === */
-#define WhiteIsZero 0
-#define BlackIsZero 1
-#define RGB 2
-#define RGB_Palette 3
-#define Tranparency_Mask 4
-#define CMYK 5
-#define YCbCr 6
-#define CIELab 8
+#define PI_WhiteIsZero 0
+#define PI_BlackIsZero 1
+#define PI_RGB 2
+#define PI_RGB_Palette 3
+#define PI_Tranparency_Mask 4
+#define PI_CMYK 5
+#define PI_YCbCr 6
+#define PI_CIELab 8
 /* === </Types for PhotometricInterpretation> === */
 
 #define PlanarConfiguration 284
@@ -243,5 +254,51 @@ typedef double DOUBLE;
 #define YPosition_t RATIONAL
 #define YResolution_t RATIONAL
 #define WhitePoint_t RATIONAL
+
+/* ============================================================ */
+/* ========= Defines how to store tiff tags in memory ========= */
+/* ============================================================ */
+
+typedef struct _TifTagData
+{
+    WORD tagId;          /* The tag identifier  */
+    WORD dataType;       // type id
+    size_t dataCount;    // length of array
+
+    // data, use malloc & free, kinda like a void ptr
+    unsigned char *data; 
+    // but void ptrs don't like arithmetic being done on them and thus its a unsigned char
+} tiffDataTag_t;
+
+typedef int imgType;
+
+typedef unsigned char pixel_t;
+
+// represents a tiff image. One tiff file can contain multiple images
+typedef struct _GenericTiffSubFile { 
+    DWORD nextIFDOffset; // Offset to next IFD
+
+    size_t tagCount;    // length of tag array
+    tiffDataTag_t* tags; // tags
+
+    pixel_t* pixels; // gray scale
+    // OR
+    pixel_t* pixelsRed; // rgb
+    pixel_t* pixelsGreen;
+    pixel_t* pixelsBlue;
+
+    size_t pixelCount;
+
+    imgType type; // GRAY_SCALE or RGB
+
+} tiffImage_t;
+
+// represents a tiff file
+typedef struct _TiffFile { 
+    uint16_t byteOrder;
+
+    tiffImage_t* images;
+    size_t imagesCount;
+} tiffFile_t;
 
 #endif

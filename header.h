@@ -1,10 +1,7 @@
 #ifndef HEADER_H_
 #define HEADER_H_
-
-#define true 1
-#define false 0
-
-typedef unsigned char boolean;
+#include <stdbool.h>
+#include "tiffFormat.h"
 
 // if f is NULL, print msg to stderr and return -1
 #define assertNotNull(f, msg) if ((f) == NULL) { fprintf(stderr, (msg)); return -1; }
