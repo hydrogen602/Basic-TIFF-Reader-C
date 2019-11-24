@@ -5,7 +5,6 @@ LDLIBS = -lm
 
 HEADERS := $(wildcard *.h)
 
-
 all: main.o
 	$(CC) -o main main.o
 
