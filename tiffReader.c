@@ -65,8 +65,9 @@ int fileReader(const char* filename, unsigned char* buffer, unsigned int fileSiz
 /* ======== <helper read functions> ======== */
 
 uint8_t _tiffReader_read1ByteFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
-    if (offset + sizeof(uint8_t) >= fileSize) {
-        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint8_t));
+    if (offset + sizeof(uint8_t) - 1 >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu at line %d\n", offset + sizeof(uint8_t), __LINE__);
+        fprintf(stderr, "byteOrder = %s, offset = %u, fileSize = %u\n", (byteOrder == TIFF_LITTLE_ENDIAN) ? "little" : "big", offset, fileSize);
         exit(1);
     }
 
@@ -77,8 +78,8 @@ uint8_t _tiffReader_read1ByteFromBuffer(WORD byteOrder, unsigned int offset, uns
 }
 
 uint16_t _tiffReader_read2BytesFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
-    if (offset + sizeof(uint16_t) >= fileSize) {
-        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint16_t));
+    if (offset + sizeof(uint16_t) - 1 >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu at line %d\n", offset + sizeof(uint16_t), __LINE__);
         exit(1);
     }
 
@@ -100,8 +101,9 @@ uint16_t _tiffReader_read2BytesFromBuffer(WORD byteOrder, unsigned int offset, u
 }
 
 uint32_t _tiffReader_read4BytesFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
-    if (offset + sizeof(uint32_t) >= fileSize) {
-        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint32_t));
+    // we start reading at offset, so it is sizeof( type ) - 1
+    if (offset + sizeof(uint32_t) - 1 >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu at line %d\n", offset + sizeof(uint32_t), __LINE__);
         exit(1);
     }
 
@@ -123,8 +125,8 @@ uint32_t _tiffReader_read4BytesFromBuffer(WORD byteOrder, unsigned int offset, u
 }
 
 uint64_t _tiffReader_read8BytesFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
-    if (offset + sizeof(uint64_t) >= fileSize) {
-        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint64_t));
+    if (offset + sizeof(uint64_t) - 1 >= fileSize) {
+        fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu at line %d\n", offset + sizeof(uint64_t), __LINE__);
         exit(1);
     }
 
@@ -165,7 +167,7 @@ int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fil
     positionInMemory += sizeof(WORD);
 
     WORD version;
-    memcpy(&version, buffer, sizeof(WORD));
+    memcpy(&version, buffer + positionInMemory, sizeof(WORD));
     positionInMemory += sizeof(WORD);
 
     assert(_tiffReader_isProperHeader(byteOrder, version), "Image doesn't have a proper header\n");
@@ -184,15 +186,17 @@ int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fil
     
     if (t->byteOrder == TIFF_BIG_ENDIAN) {
         printf("got order: big endian\n");
+        printf("got version: %x\n", __builtin_bswap16(version));
     }
     else if (t->byteOrder == TIFF_LITTLE_ENDIAN) {
         printf("got order: little endian\n");
+        printf("got version: %x\n", version);
     }
     else {
         assertEx(false, "Invalid State: byteOrder is not correct: %ud\n", t->byteOrder);
     }
 
-    printf("got version: %x\n", version);
+    
     printf("got offset: %x\n", ifdOffset);
 
     t->images = malloc(sizeof(tiffImage_t) * 1);
@@ -243,23 +247,49 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         
         // two bytes types
         if ((dataType == SHORT_TypeID || dataType == SSHORT_TypeID) && tagPtr->dataCount == 1) {
-            indexData(tagPtr, 0) = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+            uint16_t n = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+            
+            memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint16_t));
+
+            if (tagPtr->tagId == 259) {
+                printf("addr = %x\n", tagPtr->data);
+                short n2;
+                memcpy(&n2, tagPtr->data, sizeof(short));
+                printf("should: %d == %u\n", n2, n);
+            }
+
+            printf("%u\n", n);
         }
 
         // four bytes types
         else if ((dataType == LONG_TypeID || dataType == SLONG_TypeID) && tagPtr->dataCount == 1) {
-            indexData(tagPtr, 0) = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+            uint32_t n = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+            memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint32_t));
+            printf("%u\n", n);
         }
 
         // one byte types
         else if ((dataType == BYTE_TypeID || dataType == SBYTE_TypeID || dataType == UNDEFINE_TypeID) && tagPtr->dataCount == 1) {
-            indexData(tagPtr, 0) = _tiffReader_read1ByteFromBuffer(byteOrder, offset, buffer, fileSize);
+            uint8_t n = _tiffReader_read1ByteFromBuffer(byteOrder, offset, buffer, fileSize);
+            memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint8_t));
+            printf("%u\n", n);
         }
 
         // data located elsewhere
         else {
             DWORD tmpOffset = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
 
+            if (tagPtr->tagId == 34675) {
+                printf("INFO:\n");
+                printf("\tsizeof(data) = %lu\n", getTypeSizeOf(tagPtr->dataType));
+                printf("\tdata count   = %lu\n", tagPtr->dataCount);
+                printf("\ttmpOffset    = %u\n", tmpOffset);
+                printf("\tfileSize     = %u\n", fileSize);
+                putchar('\n');
+
+            }
+
+            printf("data point = ");
             for (int index = 0; index < tagPtr->dataCount; ++index) {
                 /* the formats and their sizes
                     sizeof(BYTE),       // 1
@@ -278,19 +308,25 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 
                 if (getTypeSizeOf(dataType) == 1) {
                    uint8_t n = _tiffReader_read1ByteFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
-                   printf("data point = %u\n", n);
+                   if (dataType == ASCII_TypeID || dataType == BYTE_TypeID) {
+                       printf("%c", n);
+                   }
+                   else {
+                       printf("%u, ", n);
+                   }
+                   
                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int8_t));
                 }
 
                 else if (getTypeSizeOf(dataType) == 2) {
                    uint16_t n = _tiffReader_read2BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
-                   printf("data point = %u\n", n);
+                   printf("%u, ", n);
                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int16_t));
                 }
 
                 else if (getTypeSizeOf(dataType) == 4) {
                    uint32_t n = _tiffReader_read4BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
-                   printf("data point = %u\n", n);
+                   printf("%u, ", n);
                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int32_t));
                 }
 
@@ -298,18 +334,20 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                     RATIONAL r; // eh whatever the sign
                     r.num = _tiffReader_read4BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
                     r.denom = _tiffReader_read4BytesFromBuffer(byteOrder, tmpOffset + sizeof(DWORD), buffer, fileSize);
-                    printf("data point = %u / %u\n", r.num, r.denom);
+                    printf("%u / %u, ", r.num, r.denom);
                     memcpy(indexDataPtr(tagPtr, index), &r, sizeof(RATIONAL));
                 }
                 else if (dataType == DOUBLE_TypeID) {
                     uint64_t n = _tiffReader_read8BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
-                    printf("data point = %lld\n", n);
+                    printf("%lld, ", n);
                     memcpy(indexDataPtr(tagPtr, index), &n, sizeof(DOUBLE));
                 }
 
                 tmpOffset += getTypeSizeOf(dataType);
             }
+            putchar('\n');
         }
+        tagPrintDebug(tagPtr);
 
         offset += sizeof(DWORD);
 

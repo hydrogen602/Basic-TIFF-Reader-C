@@ -16,4 +16,7 @@ tiffDataTag_t newDataTag(WORD tagId, WORD dataType, size_t dataCount);
 // frees allocated memory of dataTag
 void freeDataTag(tiffDataTag_t *t);
 
+// print tag name if known
+void tagPrintDebug(tiffDataTag_t *t);
+
 #endif
