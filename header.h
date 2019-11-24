@@ -1,6 +1,7 @@
 #ifndef HEADER_H_
 #define HEADER_H_
 #include <stdbool.h>
+#include "tiffFormat.h"
 
 // if f is NULL, print msg to stderr and return -1
 #define assertNotNull(f, msg) if ((f) == NULL) { fprintf(stderr, (msg)); return -1; }

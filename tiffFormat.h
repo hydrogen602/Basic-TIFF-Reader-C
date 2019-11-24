@@ -1,10 +1,19 @@
 #ifndef TIFF_FORMAT_H_
 #define TIFF_FORMAT_H_
 
+#define TIFF_LITTLE_ENDIAN 0x4949
+#define TIFF_BIG_ENDIAN 0x4d4d
+
+#define TIFF_VERSION 0x002a
+#define TIFF_VERSION_BYTEFLIP 0x2a00
+
 /*
  * Tag ID names and ID numbers are sourced from:
  * https://www.fileformat.info/format/tiff/egff.htm
  */
+
+typedef uint16_t WORD; // 2 bytes
+typedef uint32_t DWORD; // 4 bytes
 
 // Tiff tag data types
 
@@ -49,35 +58,19 @@ typedef double DOUBLE;
 
 #define NUMBER_OF_TYPES 12
 
-// index i should return sizeof type i
-const unsigned long SIZEOF_TYPE_LOOKUP_TABLE[13] = { 0, 
-    sizeof(BYTE),
-    sizeof(ASCII),
-    sizeof(SHORT),
-    sizeof(LONG),
-    sizeof(RATIONAL),
-    sizeof(SBYTE),
-    sizeof(UNDEFINE),
-    sizeof(SSHORT),
-    sizeof(SLONG),
-    sizeof(SRATIONAL),
-    sizeof(FLOAT),
-    sizeof(DOUBLE),
-};
-
 /* === Classes === */
 
 // Bi-level and Gray-scale
-const int GRAY_SCALE_TAGS[] = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 };
+#define GRAY_SCALE_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296 }
 #define GRAY_SCALE_TAGS_COUNT 13
 
-const int PALETTE_COLOR_TAGS[] = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 };
+#define PALETTE_COLOR_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 320 }
 #define PALETTE_COLOR_TAGS_COUNT 14
 
-const int RGB_TAGS[] = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 };
+#define RGB_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 284 }
 #define RGB_TAGS_COUNT 14
 
-const int YCbCr_TAGS = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 };
+#define  YCbCr_TAGS { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 283, 296, 529, 530, 531, 532 }
 #define YCbCr_TAGS_COUNT 17
 
 /* === Define Tag IDs === */
@@ -261,5 +254,51 @@ const int YCbCr_TAGS = { 254, 256, 257, 258, 259, 262, 273, 277, 278, 279, 282, 
 #define YPosition_t RATIONAL
 #define YResolution_t RATIONAL
 #define WhitePoint_t RATIONAL
+
+/* ============================================================ */
+/* ========= Defines how to store tiff tags in memory ========= */
+/* ============================================================ */
+
+typedef struct _TifTagData
+{
+    WORD tagId;          /* The tag identifier  */
+    WORD dataType;       // type id
+    size_t dataCount;    // length of array
+
+    // data, use malloc & free, kinda like a void ptr
+    unsigned char *data; 
+    // but void ptrs don't like arithmetic being done on them and thus its a unsigned char
+} tiffDataTag_t;
+
+typedef int imgType;
+
+typedef unsigned char pixel_t;
+
+// represents a tiff image. One tiff file can contain multiple images
+typedef struct _GenericTiffSubFile { 
+    DWORD nextIFDOffset; // Offset to next IFD
+
+    size_t tagCount;    // length of tag array
+    tiffDataTag_t* tags; // tags
+
+    pixel_t* pixels; // gray scale
+    // OR
+    pixel_t* pixelsRed; // rgb
+    pixel_t* pixelsGreen;
+    pixel_t* pixelsBlue;
+
+    size_t pixelCount;
+
+    imgType type; // GRAY_SCALE or RGB
+
+} tiffImage_t;
+
+// represents a tiff file
+typedef struct _TiffFile { 
+    uint16_t byteOrder;
+
+    tiffImage_t* images;
+    size_t imagesCount;
+} tiffFile_t;
 
 #endif

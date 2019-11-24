@@ -4,14 +4,18 @@
 
 #include "header.h"
 #include "tiffReader.h"
+#include "tiffTagStorage.h"
+#include "tiffImage.h"
 
-bool isProperHeader(tiffHead_t* t) {
-    if (t->identifier != 0x4d4d && t->identifier != 0x4949) {
+bool _tiffReader_isProperHeader(uint16_t identifier, uint16_t version) {
+
+    if (identifier != TIFF_BIG_ENDIAN && identifier != TIFF_LITTLE_ENDIAN) {
         return false;
     }
-    if (t->version != 0x002a) {
+    if (version != TIFF_VERSION && version != TIFF_VERSION_BYTEFLIP) {
         return false;
     }
+
     return true;
 }
 
@@ -58,7 +62,9 @@ int fileReader(const char* filename, unsigned char* buffer, unsigned int fileSiz
     return 0;
 }
 
-uint8_t read1ByteFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+/* ======== <helper read functions> ======== */
+
+uint8_t _tiffReader_read1ByteFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
     if (offset + sizeof(uint8_t) >= fileSize) {
         fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint8_t));
         exit(1);
@@ -70,101 +76,113 @@ uint8_t read1ByteFromBuffer(bool littleEndian, unsigned int offset, unsigned cha
     return result;   
 }
 
-uint16_t read2BytesFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+uint16_t _tiffReader_read2BytesFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
     if (offset + sizeof(uint16_t) >= fileSize) {
         fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint16_t));
         exit(1);
     }
 
     uint16_t result;
-    if (littleEndian) {
+    if (byteOrder == TIFF_LITTLE_ENDIAN) {
         memcpy(&result, buffer + offset, sizeof(uint16_t));
     }
-    else {
+    else if (byteOrder == TIFF_BIG_ENDIAN) {
         uint16_t tmp;
         memcpy(&tmp, buffer + offset, sizeof(uint16_t));
         result = __builtin_bswap16(tmp);        
+    }
+    else {
+        fprintf(stderr, "Invalid State: byteOrder not correct: %ud\n", byteOrder);
+        result = 0;
     }
 
     return result;
 }
 
-uint32_t read4BytesFromBuffer(bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+uint32_t _tiffReader_read4BytesFromBuffer(WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
     if (offset + sizeof(uint32_t) >= fileSize) {
         fprintf(stderr, "ArrayIndexOutOfBoundsException: %lu\n", offset + sizeof(uint32_t));
         exit(1);
     }
 
     uint32_t result;
-    if (littleEndian) {
+    if (byteOrder == TIFF_LITTLE_ENDIAN) {
         memcpy(&result, buffer + offset, sizeof(uint32_t));
     }
-    else {
+    else if (byteOrder == TIFF_BIG_ENDIAN) {
         uint32_t tmp;
         memcpy(&tmp, buffer + offset, sizeof(uint32_t));
         result = __builtin_bswap32(tmp);        
+    }
+    else {
+        fprintf(stderr, "Invalid State: byteOrder not correct: %ud\n", byteOrder);
+        result = 0;
     }
 
     return result;
 }
 
-int parseHeader(tiffHead_t* t, unsigned char* buffer, unsigned int fileSize) {
+/* ======== </helper read functions> ======== */
+
+
+int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fileSize) {
     // will probably only compile with gcc
+
+    /*
+     * tiff header
+     */
 
     // basic tiff header is 8 bytes long
     assert(fileSize >= 8, "Image doesn't even have a header\n");
 
     unsigned int positionInMemory = 0;
 
-    memcpy(&(t->identifier), buffer, sizeof(t->identifier));
-    positionInMemory += sizeof(t->identifier);
+    WORD byteOrder;
+    memcpy(&byteOrder, buffer, sizeof(WORD));
+    positionInMemory += sizeof(WORD);
+
+    WORD version;
+    memcpy(&version, buffer, sizeof(WORD));
+    positionInMemory += sizeof(WORD);
+
+    assert(_tiffReader_isProperHeader(byteOrder, version), "Image doesn't have a proper header\n");
+
+    t->byteOrder = byteOrder;
+    t->images = NULL;
+    t->imagesCount = 0; // not known yet cause they are stored linked-list style
 
     /* 
      * runs with the assumption of being run on a little-endian machine 
      * cause I don't want to kill myself over byte order 
      */
 
-    bool littleEndian = -1;
-    if (t->identifier == 0x4d4d) {
-        littleEndian = false; // big endian
-    }
-    else if (t->identifier == 0x4949) {
-        littleEndian = true;
-    }
-    else {
-        fprintf(stderr, "This is not a tiff file\n");
-        return -1;
-    }
-
-    t->version = readShortFromBuffer(littleEndian, positionInMemory, buffer, fileSize);
-    positionInMemory += sizeof(short);
-
-    t->IFDOffset = readIntFromBuffer(littleEndian, positionInMemory, buffer, fileSize);
+    DWORD ifdOffset = _tiffReader_read4BytesFromBuffer(byteOrder, positionInMemory, buffer, fileSize);
     positionInMemory += sizeof(int);
     
-    printf("got number: %x\n", t->identifier);
-    printf("got version: %x\n", t->version);
-    printf("got offset: %x\n", t->IFDOffset);
+    if (t->byteOrder == TIFF_BIG_ENDIAN) {
+        printf("got order: big endian\n");
+    }
+    else if (t->byteOrder == TIFF_LITTLE_ENDIAN) {
+        printf("got order: little endian\n");
+    }
+    else {
+        assertEx(false, "Invalid State: byteOrder is not correct: %ud\n", t->byteOrder);
+    }
 
-    assert(isProperHeader(t), "Header incorrect\n");
+    printf("got version: %x\n", version);
+    printf("got offset: %x\n", ifdOffset);
 
-    parseIFD(&(t->IFDOffset), littleEndian, t->IFDOffset, buffer, fileSize);
+    //_tiffReader_parseIFD(&(t->IFDOffset), littleEndian, t->IFDOffset, buffer, fileSize);
 
     return 0;
 }
 
-void freeIFD(tiffImage_t* t) {
-    for (size_t i = 0; i < t->tagCount; ++i) {
-        freeDataTag(t->tags + i);
-    }
-}
-
-int parseIFD(tiffImage_t* t, bool littleEndian, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
     // offset + buffer should be where the IFD is
-    t->tagCount = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
+    t->tagCount = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
     offset += sizeof(short);
 
-    printf("Number of tags: %d\n", t->tagCount);
+    printf("Number of tags: %lu\n", t->tagCount);
 
     // remember to free this memory, len = t.NumDirEntries
     t->tags = malloc(t->tagCount * sizeof(tiffDataTag_t));
@@ -174,14 +192,14 @@ int parseIFD(tiffImage_t* t, bool littleEndian, unsigned int offset, unsigned ch
 
     for (int i = 0; i < t->tagCount; i++) {
 
-        WORD tagId = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
+        WORD tagId = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
         printf("TagId: %d\n", tagId);
         offset += sizeof(WORD);
         
-        WORD dataType = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
+        WORD dataType = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
         offset += sizeof(WORD);
 
-        DWORD dataCount = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
+        DWORD dataCount = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
         offset += sizeof(DWORD);
 
         // create data tag
@@ -194,22 +212,22 @@ int parseIFD(tiffImage_t* t, bool littleEndian, unsigned int offset, unsigned ch
         
         // two bytes types
         if ((dataType == SHORT_TypeID || dataType == SSHORT_TypeID) && (t->tags + i)->dataCount == 1) {
-            indexData(t->tags + i, 0) = readShortFromBuffer(littleEndian, offset, buffer, fileSize);
+            indexData(t->tags + i, 0) = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
         }
 
         // four bytes types
         else if ((dataType == LONG_TypeID || dataType == SLONG_TypeID) && (t->tags + i)->dataCount == 1) {
-            indexData(t->tags + i, 0) = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
+            indexData(t->tags + i, 0) = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
         }
 
         // one byte types
         else if ((dataType == BYTE_TypeID || dataType == SBYTE_TypeID || dataType == UNDEFINE_TypeID) && (t->tags + i)->dataCount == 1) {
-            indexData(t->tags + i, 0) = readByteFromBuffer(littleEndian, offset, buffer, fileSize);
+            indexData(t->tags + i, 0) = _tiffReader_read1ByteFromBuffer(byteOrder, offset, buffer, fileSize);
         }
 
         // data located elsewhere
         else {
-            DWORD jmpAddress = readIntFromBuffer(littleEndian, offset, buffer, fileSize);
+            DWORD jmpAddress = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
         }
 
         offset += sizeof(DWORD);
@@ -219,6 +237,12 @@ int parseIFD(tiffImage_t* t, bool littleEndian, unsigned int offset, unsigned ch
     }
 
     return 0;
+}
+
+void _tiffReader_freeIFD(tiffImage_t* t) {
+    for (size_t i = 0; i < t->tagCount; ++i) {
+        freeDataTag(t->tags + i);
+    }
 }
 
 int main(void) {
@@ -238,9 +262,9 @@ int main(void) {
     assert(result == 0, "File Reading Failed\n");
 
     
-    tiffHead_t t;
-    result = parseHeader(&t, buffer, sizeofImage);
-    assert(result == 0, "Header Parsing Failed\n");
+    tiffFile_t t;
+    result = _tiffReader_parseFile(&t, buffer, sizeofImage);
+    assert(result == 0, "File Parsing Failed\n");
     
     //printf("sizeofImage = %d\n", sizeofImage);
     
