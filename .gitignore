@@ -6,3 +6,5 @@ spirals/template9.tiff
 main
 spirals/primeSpiralsTiff
 .vscode/
+result.txt
+tiffReader

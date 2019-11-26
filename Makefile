@@ -10,17 +10,20 @@ HEADERS := $(wildcard *.h)
 all: main.o
 	$(CC) -o main main.o
 
-tiffReader: tiffReader.o tiffTagStorage.o tiffImage.o
-	$(CC) -o tiffReader tiffReader.o tiffTagStorage.o tiffImage.o
+tiffReader: tiffReader.o tiffTagStorage.o tiffImage.o tiffReaderHelper.o
+	$(CC) -o tiffReader tiffReader.o tiffTagStorage.o tiffImage.o tiffReaderHelper.o
 
 tiffTagStorage.o: tiffTagStorage.c $(HEADERS)
 	$(CC) $(CFLAGS) -c tiffTagStorage.c -o tiffTagStorage.o
+
+tiffReaderHelper.o: tiffReaderHelper.c $(HEADERS)
+	$(CC) $(CFLAGS) -c tiffReaderHelper.c -o tiffReaderHelper.o
 
 tiffImage.o: tiffImage.c $(HEADERS)
 	$(CC) $(CFLAGS) -c tiffImage.c -o tiffImage.o
 
 tiffReader.o: tiffReader.c $(HEADERS)
-	$(CC) $(CFLAGS) $(DEBUG) -c tiffReader.c -o tiffReader.o
+	$(CC) $(CFLAGS) -c tiffReader.c -o tiffReader.o
 
 clean:
-	rm *.o main
+	rm *.o main tiffReader

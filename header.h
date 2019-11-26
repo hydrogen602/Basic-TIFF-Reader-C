@@ -2,6 +2,8 @@
 #define HEADER_H_
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
 #include "tiffFormat.h"
 
 // if f is NULL, print msg to stderr and return -1

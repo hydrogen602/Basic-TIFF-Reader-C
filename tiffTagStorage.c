@@ -21,6 +21,13 @@ tiffDataTag_t newDataTag(WORD tagId, WORD dataType, size_t dataCount) {
     return tmp;
 }
 
+tiffDataTag_t* findTag(WORD tagId, tiffDataTag_t* tags, size_t tagCount) {
+    for (int i = 0; i < tagCount; ++i) {
+        if ((tags + i)->tagId == tagId) return tags + i;
+    }
+    return NULL;
+}
+
 void freeDataTag(tiffDataTag_t *t) {
     free(t->data);
 }

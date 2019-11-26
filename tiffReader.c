@@ -6,6 +6,7 @@
 #include "tiffReader.h"
 #include "tiffTagStorage.h"
 #include "tiffImage.h"
+#include "tiffReaderHelper.h"
 
 // apparently macros can be define with -D name
 
@@ -217,8 +218,15 @@ int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fil
 }
 
 int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, unsigned char* buffer, unsigned int fileSize) {
+    t->height = 0;
+    t->width = 0;
+
     // offset + buffer should be where the IFD is
     t->tagCount = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+    if (t->tagCount == 0 || t->tagCount >= 100) {
+        fprintf(stderr, "Got an unusual amount of tags: %ld\n", t->tagCount);
+    }
+
     offset += sizeof(short);
 
     // remember to free this memory, len = t.NumDirEntries
@@ -273,6 +281,13 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 
             printf("%u\n", n);
             #endif
+
+            if (tagPtr->tagId == ImageHeight) {
+                t->height = n;
+            }
+            else if (tagPtr->tagId == ImageWidth) {
+                t->width = n;
+            }
         }
 
         // four bytes types
@@ -283,6 +298,14 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
             #ifdef DEBUG
             printf("%u\n", n);
             #endif
+
+            // image height and width may be two or four bytes
+            if (tagPtr->tagId == ImageHeight) {
+                t->height = n;
+            }
+            else if (tagPtr->tagId == ImageWidth) {
+                t->width = n;
+            }
         }
 
         // one byte types
@@ -397,6 +420,17 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 
         offset += sizeof(DWORD);
     }
+
+    if (t->height == 0 || t->width == 0) {
+        printError("Could not find height or width\n");
+        return -1;
+    }
+
+    printf("Read Image\n");
+    printf("\theight = %ld\n", t->height);
+    printf("\twidth = %ld\n", t->width);
+    putchar('\n');
+    stripsReaderFunc(t, buffer, fileSize);
 
     return 0;
 }
