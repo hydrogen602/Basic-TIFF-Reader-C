@@ -3,21 +3,29 @@
 
 tiffFormat.h
  - all structs should be here
+ - typedef for types used in tif
+ - macro defs for image ids
 
 tiffImage.c & .h
- - image and file struct
  - image checking code
 
 tiffReader.c
- - read image and turn it to image and file struct data
+ - read image file and find and load the tags in it
 
 tiffTagStorage.c & .h
  - data tag
+ - making & removing data tags
+ - dealing with data tags
+ 
+ tiffReaderHelper.c & .h
+ - make sense of a read image
+ - load pixels into memory
 
 # Restrictions of this code
   
 Only supports:
  - RGB & GrayScale
  - non-compressed images
- - files with one image in them 
+ - files with one image in them
+ - images organized as strips
 
