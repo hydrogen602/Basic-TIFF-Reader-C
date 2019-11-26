@@ -396,9 +396,6 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         #endif
 
         offset += sizeof(DWORD);
-
-        
-        
     }
 
     return 0;

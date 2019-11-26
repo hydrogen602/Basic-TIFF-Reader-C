@@ -20,7 +20,7 @@ tiffImage.o: tiffImage.c $(HEADERS)
 	$(CC) $(CFLAGS) -c tiffImage.c -o tiffImage.o
 
 tiffReader.o: tiffReader.c $(HEADERS)
-	$(CC) $(CFLAGS) -c tiffReader.c -o tiffReader.o
+	$(CC) $(CFLAGS) $(DEBUG) -c tiffReader.c -o tiffReader.o
 
 clean:
 	rm *.o main
