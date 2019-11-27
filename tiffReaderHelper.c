@@ -19,14 +19,18 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
 
     uint32_t stripsInImage = ceilDivision(t->height, rowsPerStrip);
 
-    tag = findTag(StripOffsets, t->tags, t->tagCount);
-
     printf("rowsPerStrip  = %d\n", rowsPerStrip);
     printf("stripsInImage = %d\n", stripsInImage);
 
+    tag = findTag(StripOffsets, t->tags, t->tagCount);
+
+    printf("stripOffsets  = ");
+    uint32_t n;
     for (int i = 0; i < tag->dataCount; ++i) {
-        printf("", tag->data[i]);
+        get(n, tag, i);
+        printf("%d, ", n);
     }
+    putchar('\n');
 
     return 0;
 }

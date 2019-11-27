@@ -453,7 +453,8 @@ int main(void) {
     printf("size of int = %lu\n", sizeof(int));
     printf("size of short = %lu\n", sizeof(short));
 
-    const char* filename = "test100x100.tiff";
+    const char* filename = "template1M.tiff";
+    //const char* filename = "test100x100.tiff";
 
     int sizeofImage = sizeofFile(filename);
     assert(sizeofImage > 0, "image not a real size");

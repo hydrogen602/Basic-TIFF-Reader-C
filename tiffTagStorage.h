@@ -2,11 +2,16 @@
 #define TIFF_TAG_STORAGE_H_
 
 #include <stdlib.h>
+#include <string.h>
 #include "header.h"
 #include "tiffImage.h"
 
-#define indexData(dataTag, index) *(((dataTag)->data) + ((index) * getTypeSizeOf((dataTag)->dataType)))
+//#define indexData(dataTag, index) *(((dataTag)->data) + ((index) * getTypeSizeOf((dataTag)->dataType)))
 #define indexDataPtr(dataTag, index) (((dataTag)->data) + ((index) * getTypeSizeOf((dataTag)->dataType)))
+
+// memcpy(&n, t->data, sizeof(short));
+#define get(n, tag, index) memcpy(&(n), indexDataPtr(tag, index), getTypeSizeOf((tag)->dataType))
+#define set(n, tag, index) memcpy(indexDataPtr(tag, index), &(n), getTypeSizeOf((tag)->dataType))
 
 // https://www.fileformat.info/format/tiff/egff.htm
 
