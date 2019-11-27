@@ -15,7 +15,8 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
         printError("tag not found: RowsPerStrip");
     }
 
-    uint32_t rowsPerStrip = tag->data[0]; // remember these are char pointers!!!! so this doesn't work
+    uint32_t rowsPerStrip;
+    get(rowsPerStrip, tag, 0);
 
     uint32_t stripsInImage = ceilDivision(t->height, rowsPerStrip);
 
@@ -23,6 +24,7 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
     printf("stripsInImage = %d\n", stripsInImage);
 
     tag = findTag(StripOffsets, t->tags, t->tagCount);
+    assertNotNullPtrExc(tag);
 
     printf("stripOffsets  = ");
     uint32_t n;
@@ -31,6 +33,32 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
         printf("%d, ", n);
     }
     putchar('\n');
+
+    tag = findTag(PlanarConfiguration, t->tags, t->tagCount);
+    assertNotNullPtrExc(tag);
+
+    uint32_t planarConfig;
+    get(planarConfig, tag, 0);
+
+    printf("PlanarConfig  = %d\n", planarConfig);
+
+    // i assume planar config of 1 is RGBRGBRGB while 2 is RRRGGGBBB
+
+    tag = findTag(StripByteCounts, t->tags, t->tagCount);
+    assertNotNullPtrExc(tag);
+
+    printf("stripByteCounts = ");
+    for (int i = 0; i < tag->dataCount; ++i) {
+        get(n, tag, i);
+        printf("%d, ", n);
+    }
+    putchar('\n');
+
+    t->pixelsRed = malloc(t->height * t->width);
+    t->pixelsGreen = malloc(t->height * t->width);
+    t->pixelsBlue = malloc(t->height * t->width);
+
+    
 
     return 0;
 }

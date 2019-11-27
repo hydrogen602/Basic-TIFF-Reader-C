@@ -10,6 +10,8 @@
 #define assertNotNull(f, msg) if ((f) == NULL) { fprintf(stderr, (msg)); return -1; }
 #define assertNotNullEx(f, msg, var) if ((f) == NULL) { fprintf(stderr, (msg), (var)); return -1; }
 
+#define assertNotNullPtrExc(v) if ((v) == NULL) { fprintf(stderr, "NullPointerException at %d in file %s\n", __LINE__, __FILE__); }
+
 // if bool is not evaluated to true, print msg to stderr and return -1
 #define assert(bool, msg) if (!(bool)) { fprintf(stderr, (msg)); return -1; }
 #define assertEx(bool, msg, var) if (!(bool)) { fprintf(stderr, (msg), (var)); return -1; }
