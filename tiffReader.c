@@ -207,8 +207,12 @@ int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fil
     printf("got offset: %x\n", ifdOffset);
     #endif
 
-    t->images = malloc(sizeof(tiffImage_t) * 1);
     t->imagesCount = 1; // only supports 1 image per file for now
+    t->images = malloc(sizeof(tiffImage_t) * (t->imagesCount));
+
+    for (int i = 0; i < t->imagesCount; ++i) {
+        t->images[i] = makeImage(RGB);
+    }
 
     int result = _tiffReader_parseIFD(t->images + 0, byteOrder, ifdOffset, buffer, fileSize);
 
@@ -430,7 +434,11 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
     printf("\theight = %ld\n", t->height);
     printf("\twidth = %ld\n", t->width);
     putchar('\n');
-    stripsReaderFunc(t, buffer, fileSize);
+    int result = stripsReaderFunc(t, buffer, fileSize);
+    if (result != 0) {
+        printError("stripsReaderFunc failed\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -439,6 +447,12 @@ void _tiffReader_freeIFD(tiffImage_t* t) {
     for (size_t i = 0; i < t->tagCount; ++i) {
         freeDataTag(t->tags + i);
     }
+    if (t->pixels != NULL) { free(t->pixels); }
+    if (t->pixelsRed != NULL) { free(t->pixelsRed); }
+    if (t->pixelsGreen!= NULL) { free(t->pixelsGreen); }
+    if (t->pixelsBlue != NULL) { free(t->pixelsBlue); }
+    printErrMsg("yikes -> inf");
+    
     free(t->tags);
 }
 
@@ -453,8 +467,8 @@ int main(void) {
     printf("size of int = %lu\n", sizeof(int));
     printf("size of short = %lu\n", sizeof(short));
 
-    const char* filename = "template1M.tiff";
-    //const char* filename = "test100x100.tiff";
+    //const char* filename = "template1M.tiff";
+    const char* filename = "test100x100.tiff";
 
     int sizeofImage = sizeofFile(filename);
     assert(sizeofImage > 0, "image not a real size");
@@ -467,7 +481,7 @@ int main(void) {
     assert(result == 0, "File Reading Failed\n");
 
     
-    tiffFile_t t;
+    tiffFile_t t = makeFile(NULL, 1);
     result = _tiffReader_parseFile(&t, buffer, sizeofImage);
     assert(result == 0, "File Parsing Failed\n");
     

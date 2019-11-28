@@ -24,8 +24,9 @@ tiffTagStorage.c & .h
 # Restrictions of this code
   
 Only supports:
- - RGB & GrayScale
+ - RGB
  - non-compressed images
  - files with one image in them
  - images organized as strips
+ - 8 bit pixels
 
