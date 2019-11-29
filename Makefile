@@ -7,11 +7,11 @@ DEBUG = -D DEBUG
 
 HEADERS := $(wildcard *.h)
 
-all: main.o
-	$(CC) -o main main.o
+all: main.o tiffTagStorage.o tiffReaderHelper.o tiffImage.o tiffReader.o
+	$(CC) $(CFLAGS) -o main main.o tiffTagStorage.o tiffReaderHelper.o tiffImage.o tiffReader.o
 
-tiffReader: tiffReader.o tiffTagStorage.o tiffImage.o tiffReaderHelper.o
-	$(CC) -o tiffReader tiffReader.o tiffTagStorage.o tiffImage.o tiffReaderHelper.o
+main.o: main.c $(HEADERS)
+	$(CC) $(CFLAGS) -c main.c -o main.o
 
 tiffTagStorage.o: tiffTagStorage.c $(HEADERS)
 	$(CC) $(CFLAGS) -c tiffTagStorage.c -o tiffTagStorage.o
@@ -26,4 +26,4 @@ tiffReader.o: tiffReader.c $(HEADERS)
 	$(CC) $(CFLAGS) -c tiffReader.c -o tiffReader.o
 
 clean:
-	rm *.o main tiffReader
+	rm *.o main main

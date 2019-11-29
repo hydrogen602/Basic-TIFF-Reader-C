@@ -19,8 +19,6 @@
 // like before but runs a cleanup command 
 #define assertCmd(bool, msg, cmd) if (!(bool)) { fprintf(stderr, (msg)); cmd; return -1; }
 
-#define printError(msg) fprintf(stderr, (msg))
-
 #define printErrMsg(error) fprintf(stderr, "%s at %d in file %s\n", error, __LINE__, __FILE__)
 
 

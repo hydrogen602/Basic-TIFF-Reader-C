@@ -10,7 +10,8 @@
 #define indexDataPtr(dataTag, index) (((dataTag)->data) + ((index) * getTypeSizeOf((dataTag)->dataType)))
 
 // memcpy(&n, t->data, sizeof(short));
-#define get(n, tag, index) memcpy(&(n), indexDataPtr(tag, index), getTypeSizeOf((tag)->dataType))
+#define get(n, tag, index) (n)=0; memcpy(&(n), indexDataPtr(tag, index), getTypeSizeOf((tag)->dataType))
+// the n = 0 is necessary as memcpy might only set parts of the variable, allowing garbage to remain as the var isn't fully initialized
 #define set(n, tag, index) memcpy(indexDataPtr(tag, index), &(n), getTypeSizeOf((tag)->dataType))
 
 // https://www.fileformat.info/format/tiff/egff.htm

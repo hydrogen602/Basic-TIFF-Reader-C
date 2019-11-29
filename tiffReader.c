@@ -40,7 +40,7 @@ int sizeofFile(const char* filename) {
     return count;
 }
 
-int fileReader(const char* filename, unsigned char* buffer, unsigned int fileSize) {
+int _tiffReader_fileReader(const char* filename, unsigned char* buffer, unsigned int fileSize) {
     FILE *f = fopen(filename, "rb");
     if (f == NULL)
     {
@@ -273,7 +273,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         if ((dataType == SHORT_TypeID || dataType == SSHORT_TypeID) && tagPtr->dataCount == 1) {
             uint16_t n = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
             
-            memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint16_t));
+            set(n, tagPtr, 0);
 
             #ifdef DEBUG
             if (tagPtr->tagId == 259) {
@@ -297,7 +297,8 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         // four bytes types
         else if ((dataType == LONG_TypeID || dataType == SLONG_TypeID) && tagPtr->dataCount == 1) {
             uint32_t n = _tiffReader_read4BytesFromBuffer(byteOrder, offset, buffer, fileSize);
-            memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint32_t));
+
+            set(n, tagPtr, 0);
 
             #ifdef DEBUG
             printf("%u\n", n);
@@ -315,7 +316,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         // one byte types
         else if ((dataType == BYTE_TypeID || dataType == SBYTE_TypeID || dataType == UNDEFINE_TypeID) && tagPtr->dataCount == 1) {
             uint8_t n = _tiffReader_read1ByteFromBuffer(byteOrder, offset, buffer, fileSize);
-            memcpy(indexDataPtr(tagPtr, 0), &n, sizeof(uint8_t));
+            set(n, tagPtr, 0);
 
             #ifdef DEBUG
             printf("%u\n", n);
@@ -368,7 +369,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                    }
                    #endif
                    
-                   memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int8_t));
+                   set(n, tagPtr, index);
                 }
 
                 else if (getTypeSizeOf(dataType) == 2) {
@@ -378,7 +379,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                    printf("%u, ", n);
                    #endif
 
-                   memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int16_t));
+                    set(n, tagPtr, index);
                 }
 
                 else if (getTypeSizeOf(dataType) == 4) {
@@ -388,7 +389,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                     printf("%u, ", n);
                     #endif
 
-                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(int32_t));
+                    set(n, tagPtr, index);
                 }
 
                 else if (dataType == RATIONAL_TypeID || dataType == SRATIONAL_TypeID) {
@@ -400,7 +401,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                     printf("%u / %u, ", r.num, r.denom);
                     #endif
 
-                    memcpy(indexDataPtr(tagPtr, index), &r, sizeof(RATIONAL));
+                    set(r, tagPtr, index);
                 }
                 else if (dataType == DOUBLE_TypeID) {
                     uint64_t n = _tiffReader_read8BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
@@ -409,7 +410,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                     printf("%lld, ", n);
                     #endif
 
-                    memcpy(indexDataPtr(tagPtr, index), &n, sizeof(DOUBLE));
+                    set(n, tagPtr, index);
                 }
 
                 tmpOffset += getTypeSizeOf(dataType);
@@ -426,7 +427,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
     }
 
     if (t->height == 0 || t->width == 0) {
-        printError("Could not find height or width\n");
+        printErrMsg("Could not find height or width\n");
         return -1;
     }
 
@@ -436,7 +437,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
     putchar('\n');
     int result = stripsReaderFunc(t, buffer, fileSize);
     if (result != 0) {
-        printError("stripsReaderFunc failed\n");
+        printErrMsg("stripsReaderFunc failed\n");
         return -1;
     }
 
@@ -451,7 +452,6 @@ void _tiffReader_freeIFD(tiffImage_t* t) {
     if (t->pixelsRed != NULL) { free(t->pixelsRed); }
     if (t->pixelsGreen!= NULL) { free(t->pixelsGreen); }
     if (t->pixelsBlue != NULL) { free(t->pixelsBlue); }
-    printErrMsg("yikes -> inf");
     
     free(t->tags);
 }
@@ -463,32 +463,30 @@ void freeFile(tiffFile_t *t) {
     free(t->images);
 }
 
-int main(void) {
-    printf("size of int = %lu\n", sizeof(int));
-    printf("size of short = %lu\n", sizeof(short));
+int readFile(const char* filename, tiffFile_t* t) {
 
-    //const char* filename = "template1M.tiff";
-    const char* filename = "test100x100.tiff";
+    t->byteOrder = TIFF_BIG_ENDIAN;
+    t->images = NULL;
+    t->imagesCount = 0;
 
     int sizeofImage = sizeofFile(filename);
+    if (sizeofImage == -1) { printErrMsg("readFile failed"); return -1; }
     assert(sizeofImage > 0, "image not a real size");
 
     // sizeofImage is a byte count and length of buffer
-    unsigned char * buffer = malloc(sizeofImage);
+    unsigned char* buffer = malloc(sizeofImage);
     assertNotNull(buffer, "Memory allocation failed\n");
 
-    int result = fileReader(filename, buffer, sizeofImage);
+    int result = _tiffReader_fileReader(filename, buffer, sizeofImage);
     assert(result == 0, "File Reading Failed\n");
 
     
-    tiffFile_t t = makeFile(NULL, 1);
-    result = _tiffReader_parseFile(&t, buffer, sizeofImage);
+    result = _tiffReader_parseFile(t, buffer, sizeofImage);
     assert(result == 0, "File Parsing Failed\n");
     
     //printf("sizeofImage = %d\n", sizeofImage);
     
     free(buffer);
-    freeFile(&t);
 
-    return 0;
+    return 0; // remember to call freeFile(&t);
 }

@@ -24,10 +24,14 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
     tiffDataTag_t* tag = findTag(RowsPerStrip, t->tags, t->tagCount);
 
     if (tag == NULL) {
-        printError("tag not found: RowsPerStrip");
+        printErrMsg("tag not found: RowsPerStrip");
     }
 
     uint32_t rowsPerStrip;
+    /*
+     * remember to initialize values set with memcpy as only part of them could be set and so garbage can be included in the number
+     * initializing is happening inside of the get macro
+     */
     get(rowsPerStrip, tag, 0);
 
     uint32_t stripsInImage = ceilDivision(t->height, rowsPerStrip);
@@ -71,7 +75,7 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
     putchar('\n');
 
     if (stripByteCounts_tag->dataCount != stripOffsets_tag->dataCount) {
-        printError("StripByteCount and StripOffsetsCount are not equal\n");
+        printErrMsg("StripByteCount and StripOffsetsCount are not equal");
         return -1;
     }
 
@@ -94,7 +98,7 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
         get(offset, stripOffsets_tag, i);
         printf("strip: len = %d, offset = %d\n", sizeOfStrip, offset);
         for (int32_t j = 0; j < 0; j = j + 3) {
-            if (t->height * t->width <= pixelIndex) { printErrMsg("ArrayIndexOutOfBounds Exception"); return EXIT_FAILURE; }
+            if (pixelIndex >= t->height * t->width) { printErrMsg("ArrayIndexOutOfBounds Exception"); return EXIT_FAILURE; }
 
             *(t->pixelsRed + pixelIndex) = _tiffReaderHelper_read1ByteFromBuffer(offset + j, buffer, fileSize);
             *(t->pixelsRed + pixelIndex) = _tiffReaderHelper_read1ByteFromBuffer(offset + j+1, buffer, fileSize);
