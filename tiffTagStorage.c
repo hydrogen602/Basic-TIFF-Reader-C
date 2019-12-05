@@ -4,6 +4,7 @@
 #include "tiffTagStorage.h"
 #include "tiffFormat.h"
 #include "tiffImage.h"
+#include "support/array.h"
 
 tiffDataTag_t newDataTag(WORD tagId, WORD dataType, size_t dataCount) {
     tiffDataTag_t tmp;
@@ -21,8 +22,8 @@ tiffDataTag_t newDataTag(WORD tagId, WORD dataType, size_t dataCount) {
     return tmp;
 }
 
-tiffDataTag_t* findTag(WORD tagId, tiffDataTag_t* tags, size_t tagCount) {
-    for (int i = 0; i < tagCount; ++i) {
+tiffDataTag_t* findTag(WORD tagId, tiffDataTag_t* tags) {
+    for (int i = 0; i < len(tags); ++i) {
         if ((tags + i)->tagId == tagId) return tags + i;
     }
     return NULL;

@@ -199,7 +199,6 @@ typedef unsigned char pixel_t;
 typedef struct _GenericTiffSubFile { 
     DWORD nextIFDOffset; // Offset to next IFD
 
-    size_t tagCount;    // length of tag array
     tiffDataTag_t* tags; // tags
 
     pixel_t* pixels; // gray scale

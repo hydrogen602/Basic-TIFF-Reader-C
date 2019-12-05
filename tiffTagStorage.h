@@ -20,7 +20,7 @@
 tiffDataTag_t newDataTag(WORD tagId, WORD dataType, size_t dataCount);
 
 // searches through an array of tags for a particular tag. Returns a pointer to the tag or null
-tiffDataTag_t* findTag(WORD tagId, tiffDataTag_t* tags, size_t tagCount);
+tiffDataTag_t* findTag(WORD tagId, tiffDataTag_t* tags);
 
 // frees allocated memory of dataTag
 void freeDataTag(tiffDataTag_t *t);

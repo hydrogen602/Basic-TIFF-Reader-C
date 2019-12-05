@@ -7,6 +7,7 @@ VALGRIND = -O0 -g
 # add $(DEBUG) for debugging print statements
 
 HEADERS := $(wildcard *.h)
+HEADERS += $(wildcard support/*.h)
 
 all: main.o tiffTagStorage.o tiffReaderHelper.o tiffImage.o tiffReader.o
 	$(CC) $(CFLAGS) -o main main.o tiffTagStorage.o tiffReaderHelper.o tiffImage.o tiffReader.o
@@ -26,5 +27,10 @@ tiffImage.o: tiffImage.c $(HEADERS)
 tiffReader.o: tiffReader.c $(HEADERS)
 	$(CC) $(CFLAGS) -c tiffReader.c -o tiffReader.o
 
+# support code
+array.o: support/array.c $(HEADERS)
+	$(CC) $(CFLAGS) -c support/array.c -o array.o
+
+.PHONY: clean
 clean:
-	rm *.o main main
+	rm *.o main

@@ -5,6 +5,7 @@
 #include "tiffImage.h"
 #include "tiffTagStorage.h"
 #include "tiffFormat.h"
+#include "support/array.h"
 
 // index i should return sizeof type i
 const unsigned long SIZEOF_TYPE_LOOKUP_TABLE[13] = { 0, 
@@ -42,6 +43,9 @@ tiffImage_t makeImage(imgType iType) {
     img.pixelsGreen = NULL;
     img.pixelsRed = NULL;
 
+    img.height = 0;
+    img.width = 0;
+
     img.type = iType;
     if (iType == RGB || iType == GRAY_SCALE) {
         // pass, nothing to do
@@ -53,22 +57,22 @@ tiffImage_t makeImage(imgType iType) {
 
     img.nextIFDOffset = 0; // deal with later
 
-    img.tagCount = 0;
-    img.tags = NULL;
+    img.tags = newExpandableArray(0, sizeof(tiffDataTag_t));
     
     return img;
 }
 
-bool _tiffImage_isValidImage_helper(const int * requiredTags, size_t requiredTagLength, tiffDataTag_t * actualTags, size_t actualLength) {
+bool _tiffImage_isValidImage_helper(const int * requiredTags, size_t requiredTagLength, tiffDataTag_t * actualTags) {
     for (unsigned long t = 0; t < requiredTagLength; ++t) {
         bool found = false;
-        for (unsigned long i = 0; i < actualLength; ++i) {
+        for (unsigned long i = 0; i < len(actualTags); ++i) {
             if ((actualTags + i)->tagId == requiredTags[t]) {
                 found = true;
                 break;
             }
         }
         if (!found) {
+            fprintf(stderr, "Missing data tag %d\n", requiredTags[t]);
             return false;
         }
     }
@@ -77,7 +81,7 @@ bool _tiffImage_isValidImage_helper(const int * requiredTags, size_t requiredTag
 
 bool isValidImage(tiffImage_t* img) {
     if (img->type == GRAY_SCALE) {
-        if (!_tiffImage_isValidImage_helper(required_gray_tags, GRAY_SCALE_TAGS_COUNT, img->tags, img->tagCount)) {
+        if (!_tiffImage_isValidImage_helper(required_gray_tags, GRAY_SCALE_TAGS_COUNT, img->tags)) {
             return false;
         }
 
@@ -85,9 +89,11 @@ bool isValidImage(tiffImage_t* img) {
         if (img->pixelsBlue != NULL) return false;
         if (img->pixelsGreen != NULL) return false;
         if (img->pixelsRed != NULL) return false;
+
+        if (len(img->pixels) != img->height * img->width) return false;
     }
     else if (img->type == RGB) {
-        if (!_tiffImage_isValidImage_helper(required_rgb_tags, RGB_TAGS_COUNT, img->tags, img->tagCount)) {
+        if (!_tiffImage_isValidImage_helper(required_rgb_tags, RGB_TAGS_COUNT, img->tags)) {
             return false;
         }
 
@@ -95,6 +101,10 @@ bool isValidImage(tiffImage_t* img) {
         if (img->pixelsBlue == NULL) return false;
         if (img->pixelsGreen == NULL) return false;
         if (img->pixelsRed == NULL) return false;
+
+        if (len(img->pixelsBlue) != img->height * img->width) return false;
+        if (len(img->pixelsGreen) != img->height * img->width) return false;
+        if (len(img->pixelsRed) != img->height * img->width) return false;
     }
     else {
         fprintf(stderr, "Invalid image type, got %d\n", img->type);
@@ -114,5 +124,3 @@ tiffFile_t makeFile(tiffImage_t* images, size_t imagesCount) {
 
     return file;
 }
-
-

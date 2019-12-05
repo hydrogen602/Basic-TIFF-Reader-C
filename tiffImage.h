@@ -12,10 +12,15 @@
 
 size_t getTypeSizeOf(int typeId);
 
-// use this when making a new image as it initialises the fields. Can result in seg faults if this func isn't used for new images
-// I found that out the hard way
+/* 
+ * use this when making a new image as it initialises the fields. Can result in seg faults if this func isn't used for new images
+ * I found that out the hard way
+ */
 tiffImage_t makeImage(imgType iType);
 
+/*
+ * checks if an image has all the required tags
+ */
 bool isValidImage(tiffImage_t* img);
 
 tiffFile_t makeFile(tiffImage_t* images, size_t imagesCount);
