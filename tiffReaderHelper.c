@@ -21,7 +21,7 @@ uint8_t _tiffReaderHelper_read1ByteFromBuffer(unsigned int offset, unsigned char
 
 int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
 
-    tiffDataTag_t* tag = findTag(RowsPerStrip, t->tags, t->tagCount);
+    tiffDataTag_t* tag = findTag(RowsPerStrip, t->tags);
 
     if (tag == NULL) {
         printErrMsg("tag not found: RowsPerStrip");
@@ -39,7 +39,7 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
     printf("rowsPerStrip  = %d\n", rowsPerStrip);
     printf("stripsInImage = %d\n", stripsInImage);
 
-    tiffDataTag_t* stripOffsets_tag = findTag(StripOffsets, t->tags, t->tagCount);
+    tiffDataTag_t* stripOffsets_tag = findTag(StripOffsets, t->tags);
     assertNotNullPtrExc(stripOffsets_tag);
 
     printf("stripOffsets  = ");
@@ -50,7 +50,7 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
     }
     putchar('\n');
 
-    tag = findTag(PlanarConfiguration, t->tags, t->tagCount);
+    tag = findTag(PlanarConfiguration, t->tags);
     assertNotNullPtrExc(tag);
 
     uint32_t planarConfig;
@@ -64,7 +64,7 @@ int stripsReaderFunc(tiffImage_t* t, unsigned char* buffer, size_t fileSize) {
 
     // i assume planar config of 1 is RGBRGBRGB while 2 is RRRGGGBBB
 
-    tiffDataTag_t* stripByteCounts_tag = findTag(StripByteCounts, t->tags, t->tagCount);
+    tiffDataTag_t* stripByteCounts_tag = findTag(StripByteCounts, t->tags);
     assertNotNullPtrExc(stripByteCounts_tag);
 
     printf("stripByteCounts = ");

@@ -50,7 +50,7 @@ void* newExpandableArray(size_t length, size_t size) {
 byte* __newBuffer(size_t length, size_t maxLen) {
     byte* ptr = __newExpandableArray(length, 1, maxLen);
 
-    arrayData_t* p = ptr;
+    arrayData_t* p = (arrayData_t*) ptr;
     p--;
     p->identifier = BUFFER_ARRAY;
 
@@ -91,7 +91,7 @@ unsigned char arrayType(void* ptr) {
 
 // checks if the index requires expanding the array
 void* checkIndex(void* ptr, size_t index) {
-    arrayData_t* p = ptr;
+    arrayData_t* p = (arrayData_t*) ptr;
     p--;
     if (p->identifier == EXPANDING_ARRAY) {
         if (index < len(ptr)) {
@@ -130,7 +130,7 @@ void* checkIndex(void* ptr, size_t index) {
 }
 
 byte* checkBufferIndex(byte* ptr, size_t offset, size_t elementSize) {
-    arrayData_t* p = ptr;
+    arrayData_t* p = (arrayData_t*) ptr;
     p--;
     if (p->identifier == BUFFER_ARRAY) {
         if (offset + elementSize < len(ptr)) {

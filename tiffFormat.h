@@ -212,7 +212,8 @@ typedef struct _GenericTiffSubFile {
     size_t width;
     size_t height;
 
-    imgType type; // GRAY_SCALE or RGB
+    // GRAY_SCALE or RGB
+    imgType type; 
 
 } tiffImage_t;
 

@@ -7,6 +7,7 @@
 #include "tiffTagStorage.h"
 #include "tiffImage.h"
 #include "tiffReaderHelper.h"
+#include "support/array.h"
 
 // apparently macros can be define with -D name
 
@@ -226,23 +227,24 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
     t->width = 0;
 
     // offset + buffer should be where the IFD is
-    t->tagCount = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
-    if (t->tagCount == 0 || t->tagCount >= 100) {
-        fprintf(stderr, "Got an unusual amount of tags: %ld\n", t->tagCount);
+    size_t tagCount = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
+    if (tagCount == 0 || tagCount >= 100) {
+        fprintf(stderr, "Got an unusual amount of tags: %ld\n", tagCount);
     }
 
     offset += sizeof(short);
 
     // remember to free this memory, len = t.NumDirEntries
-    t->tags = malloc(t->tagCount * sizeof(tiffDataTag_t));
+    t->tags = newExpandableArray(tagCount, sizeof(tiffDataTag_t));
+
     assertNotNull(t->tags, "Failed to allocate memory\n");
 
     #ifdef DEBUG
-    printf("Number of tags: %lu\n", t->tagCount);
+    printf("Number of tags: %lu\n", tagCount);
     printf("Offset: %d\n", offset);
     #endif
 
-    for (int i = 0; i < t->tagCount; i++) {
+    for (int i = 0; i < tagCount; i++) {
         tiffDataTag_t * tagPtr = t->tags + i;
 
         WORD tagId = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
@@ -445,7 +447,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 }
 
 void _tiffReader_freeIFD(tiffImage_t* t) {
-    for (size_t i = 0; i < t->tagCount; ++i) {
+    for (size_t i = 0; i < len(t->tags); ++i) {
         freeDataTag(t->tags + i);
     }
     if (t->pixels != NULL) { free(t->pixels); }
