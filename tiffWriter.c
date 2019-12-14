@@ -2,7 +2,8 @@
 #include "tiffTagStorage.h"
 #include "tiffImage.h"
 #include "support/array.h"
-// todo
+
+#define fwriteValue(value, stream) fwrite(&(value), sizeof(value), 1, (stream))
 
 int ceilDivision(int a, int b) {
     // f = lambda total, rows: (total // rows) + (1 if total % rows > 0 else 0)
@@ -10,7 +11,7 @@ int ceilDivision(int a, int b) {
     return (a / b) + ((a % b > 0) ? 1 : 0);
 }
 
-int createWitdhHeightTag(tiffImage_t* t) {
+int __createWitdhHeightTag(tiffImage_t* t) {
     tiffDataTag_t* hTag = findTag(ImageHeight, t->tags);
     if (hTag != NULL) {
         // nothing to do
@@ -38,11 +39,21 @@ int createWitdhHeightTag(tiffImage_t* t) {
     return 0;
 }
 
-int createRowsPerStripTag(tiffImage_t* t) {
+int __createRowsPerStripTag(tiffImage_t* t) {
     tiffDataTag_t* test = findTag(RowsPerStrip, t->tags);
-    if (test != NULL) {
+    tiffDataTag_t* test2 = findTag(StripByteCounts, t->tags);
+
+    if (test != NULL && test2 != NULL) {
         // already known
         return 0;
+    }
+    else if (test == NULL && test2 == NULL) {
+        // make tags
+    }
+    else {
+        // only one of two exists, issue!
+        printErrMsg("Only one of RowsPerStrip and StripByteCounts exists, should either both exist or neither");
+        return -1;
     }
 
     uint64_t size = t->width * t->height;
@@ -50,6 +61,9 @@ int createRowsPerStripTag(tiffImage_t* t) {
     const int pixelsPerRow = 40000;
 
     int strips = size / pixelsPerRow;
+    if (strips == 0) {
+        strips = 1;
+    }
 
     int rowsPerStrip = ceilDivision(t->height, strips);
     
@@ -63,6 +77,204 @@ int createRowsPerStripTag(tiffImage_t* t) {
     // add to tags
     append(t->tags, tag);
 
+    tiffDataTag_t tag2 = newDataTag(StripByteCounts, LONG_TypeID, 1);
+
+    uint64_t byteCountPerStrip = rowsPerStrip * t->width;
+    if (t->type == RGB) {
+        byteCountPerStrip = byteCountPerStrip * 3;
+        size = size * 3;
+    }
+
+    //uint64_t byteCounts[strips];
+
+    for (int i = 0; i < strips - 1; ++i) {
+    //    byteCounts[i] = byteCountPerStrip;
+        set(byteCountPerStrip, &tag2, i);
+    }
+    // last one shorter
+    //byteCounts[strips - 1] = (size % byteCountPerStrip == 0) ? byteCountPerStrip : (size % byteCountPerStrip);
+    uint64_t n = (size % byteCountPerStrip == 0) ? byteCountPerStrip : (size % byteCountPerStrip);
+    set(n, &tag2, strips - 1);
+
+    //for (int i = 0; i < strips; ++i) {
+    //    set(byteCounts[i], &tag2, i);
+    //    printf("byteCounts[%d] = %lu\n", i, byteCounts[i]);
+    //}
+
+    append(t->tags, tag2);
+
+    tiffDataTag_t newTag = newDataTag(StripOffsets, LONG_TypeID, strips);
+
+    for (int i = 0; i < strips; ++i) {
+        uint64_t n = TIFF_HEADER_LENGTH + byteCountPerStrip * i;
+        set(n, &newTag, i);
+    }
+
+    tiffDataTag_t *tag_ptr = findTag(StripOffsets, t->tags);
+
+    if (tag_ptr == NULL) {
+        append(t->tags, newTag);
+    }
+    else {
+        tag_ptr->dataType = LONG_TypeID;
+        tag_ptr->dataCount = strips;
+        if (tag_ptr->data != NULL) {
+            free(tag_ptr->data);
+        }
+        tag_ptr->data = newTag.data;
+    }
+
+    return 0;
+}
+
+int __createMiscTags(tiffImage_t* t) {
+    tiffDataTag_t *test = findTag(XResolution, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(XResolution, RATIONAL_TypeID, 1);
+        RATIONAL rat = { 10 / 1 };
+        set(rat, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
+    test = findTag(YResolution, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(YResolution, RATIONAL_TypeID, 1);
+        RATIONAL rat = { 10 / 1 };
+        set(rat, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
+    test = findTag(ResolutionUnit, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(ResolutionUnit, SHORT_TypeID, 1);
+        SHORT n = 3; // 1 = none, 2 = inch, 3 = cm
+        set(n, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
+    test = findTag(NewSubFileType, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(NewSubFileType, LONG_TypeID, 1);
+        LONG n = 0;
+        set(n, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
+    if (t->type == RGB) {
+        test = findTag(PlanarConfiguration, t->tags);
+        if (test != NULL) {
+            // nothing to do
+        }
+        else {
+            tiffDataTag_t tag = newDataTag(PlanarConfiguration, SHORT_TypeID, 1);
+            int n = 1;
+            set(n, &tag, 0);
+
+            append(t->tags, tag);
+        }
+    }
+
+    test = findTag(SamplesPerPixel, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(SamplesPerPixel, SHORT_TypeID, 1);
+        SHORT n = 0;
+        if (t->type == RGB) {
+            n = 3;
+        }
+        else if (t->type == GRAY_SCALE) {
+            n = 1;
+        }
+        else {
+            printErrMsg("Invalid Image type, expected RGB or GRAY_SCALE");
+            return -1;
+        }
+        set(n, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
+    test = findTag(BitsPerSample, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        
+        tiffDataTag_t tag;
+        if (t->type == RGB) {
+            tag = newDataTag(BitsPerSample, SHORT_TypeID, 3);
+            int n = 8;
+            set(n, &tag, 0);
+            set(n, &tag, 1);
+            set(n, &tag, 2);
+        }
+        else if (t->type == GRAY_SCALE) {
+            tag = newDataTag(BitsPerSample, SHORT_TypeID, 1);
+            int n = 8;
+            set(n, &tag, 0);
+        }
+        else {
+            printErrMsg("Invalid Image type, expected RGB or GRAY_SCALE");
+            return -1;
+        }
+
+        // Compression
+
+        append(t->tags, tag);
+    }
+
+    test = findTag(Compression, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(Compression, SHORT_TypeID, 1);
+        SHORT n = C_Uncompressed;
+        set(n, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
+    test = findTag(PhotometricInterpretation, t->tags);
+    if (test != NULL) {
+        // nothing to do
+    }
+    else {
+        tiffDataTag_t tag = newDataTag(PhotometricInterpretation, SHORT_TypeID, 1);
+        SHORT n;
+        if (t->type == RGB) {
+            n = PI_RGB;
+        }
+        else if (t->type == GRAY_SCALE) {
+            n = PI_BlackIsZero;
+        }
+        else {
+            printErrMsg("Invalid Image type, expected RGB or GRAY_SCALE");
+            return -1;
+        }
+        set(n, &tag, 0);
+
+        append(t->tags, tag);
+    }
+
     return 0;
 }
 
@@ -73,9 +285,11 @@ int createMissingTags(tiffImage_t* t) {
     }
 
     int r;
-    r = createWitdhHeightTag(t);
+    r = __createWitdhHeightTag(t);
     if (r != 0) { return r; }
-    r = createRowsPerStripTag(t);
+    r = __createRowsPerStripTag(t);
+    if (r != 0) { return r; }
+    r = __createMiscTags(t);
     if (r != 0) { return r; }
 
     return 0;
@@ -100,10 +314,122 @@ int _tiffWriter_openFileAndWrite(const char* filename, unsigned char* buffer) {
     return 0;
 }
 
+int imageWrite(tiffFile_t tf, const char * filename) {
+    if (tf.imagesCount != 0) {
+        printErrMsg("Unsupported. Must have one and only one image in file");
+        return -1;
+    }
+
+    if (tf.byteOrder != TIFF_BIG_ENDIAN && tf.byteOrder != TIFF_LITTLE_ENDIAN) {
+        printErrMsg("Invalid byte order code");
+        return -1;
+    }
+
+    FILE * f = open(filename, "wb");
+    if (f == NULL) {
+        printErrMsg("File opening failed");
+        return -1;
+    }
+
+    // write header
+
+    uint16_t endianess = TIFF_LITTLE_ENDIAN;
+
+    fwriteValue(endianess, f); // cause i'm on a little endian machine
+
+    uint16_t version = TIFF_VERSION_BYTEFLIP;
+
+    fwriteValue(version, f);
+
+    // write image data
+
+    tiffImage_t img = tf.images[0];
+
+    if (img.type == RGB) {
+        tiffDataTag_t* tag = findTag(PlanarConfiguration, img.tags);
+
+        if (tag == NULL) {
+            printErrMsg("Missing Tag PlanarConfiguration");
+            fclose(f);
+            return -1;
+        }
+
+        unsigned short n;
+        get(n, tag, 0);
+        if (n != 1) {
+            printErrMsg("Planes not supported");
+            fclose(f);
+            return -1;
+        }
+
+        for (size_t i = 0; i < img.height * img.width; ++i) {
+            fputc(img.pixelsRed[i], f);
+            fputc(img.pixelsGreen[i], f);
+            fputc(img.pixelsBlue[i], f);
+        }
+    }
+    else if (img.type == GRAY_SCALE) {
+        for (size_t i = 0; i < img.height * img.width; ++i) {
+            fputc(img.pixels[i], f);
+        }
+    }
+    else {
+        printErrMsg("Unknown type");
+        return -1;
+    }
+
+    byte tagBuffer[12];
+
+    size_t locationAfter = len(img.tags) + TIFF_HEADER_LENGTH;
+    locationAfter += (img.type == RGB) ? 3 * img.height * img.width : img.height * img.width;
+
+    byte* extraData = newBuffer(0);
+
+    for (int i = 0; i < len(img.tags); ++i) {
+        tiffDataTag_t tag = img.tags[i];
+
+        memcpy(tagBuffer, tag.tagId, sizeof(tag.tagId));
+        memcpy(tagBuffer + sizeof(WORD), tag.dataType, sizeof(tag.dataType));
+        memcpy(tagBuffer + 2*sizeof(WORD), tag.dataCount, sizeof(tag.dataCount));
+
+        DWORD dataOffset = 0;
+        if (getTypeSizeOf(tag.dataType) < 2 && tag.dataCount == 1) {
+            dataOffset = *(tag.data);
+        }
+        else {
+            size_t currLen = len(extraData);
+            dataOffset = locationAfter + currLen;
+            extraData = checkBufferIndex(extraData, currLen, getTypeSizeOf(tag.dataType) * tag.dataCount);
+            memcpy(extraData + currLen, tag.data, getTypeSizeOf(tag.dataType) * tag.dataCount);
+        }
+
+        memcpy(tagBuffer + 2*sizeof(WORD) + sizeof(DWORD), dataOffset, sizeof(dataOffset));
+
+        fwrite(tagBuffer, sizeof(tagBuffer), 1, f);
+    }
+
+    fwrite(extraData, len(extraData), 1, f);
+
+    fclose(f);
+    return 0;
+}
+
 int main(void) {
-    tiffImage_t img = makeImage(RGB);
+    /*
+     * Outline of tiff structure I'm going to use
+     * 
+     * Tiff Header
+     * Image data
+     * IFD
+     * other data
+     */
+    tiffImage_t img = newImage(RGB);
     img.height = 100;
     img.width = 100;
+
+    img.pixelsBlue = malloc(100 * 100);
+    img.pixelsGreen = malloc(100 * 100);
+    img.pixelsRed = malloc(100 * 100);
 
     int r = createMissingTags(&img);
     if (r != 0) {
@@ -111,17 +437,15 @@ int main(void) {
     }
 
     if (!isValidImage(&img)) {
-        printErrMsg("Not valid image, cannot write to file\n");
+        printErrMsg("Not valid image, cannot write to file");
+        freeImage(&img);
         return -1;
     }
 
-    unsigned char* buffer = newExpandableArray(img.height * img.width * 3, sizeof(unsigned char));
-    if (buffer == NULL) {
-        printErrMsg("Malloc failed");
-        return -1;
-    }
+    tiffFile_t tifFile = newFile(&img, 1);
 
-    
+    imageWriter(tifFile, "test.tif");
 
-    
+    freeImage(&img);
+
 }

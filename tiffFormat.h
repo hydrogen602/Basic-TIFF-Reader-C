@@ -1,11 +1,15 @@
 #ifndef TIFF_FORMAT_H_
 #define TIFF_FORMAT_H_
 
+
+// Header definitions
 #define TIFF_LITTLE_ENDIAN 0x4949
 #define TIFF_BIG_ENDIAN 0x4d4d
 
 #define TIFF_VERSION 0x002a
 #define TIFF_VERSION_BYTEFLIP 0x2a00
+
+#define TIFF_HEADER_LENGTH 8 // in bytes
 
 /*
  * Tag ID names and ID numbers are sourced from:

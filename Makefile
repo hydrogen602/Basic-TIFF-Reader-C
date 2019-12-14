@@ -3,7 +3,7 @@ CFLAGS = -Wall -pedantic -O -std=c11
 LDLIBS = -lm
 DEBUG = -D DEBUG
 VALGRIND = -O0 -g
-DEBUGGER = -g
+DEBUGGER = -g -O0
 # add $(LDLIBS) for math
 # add $(DEBUG) for debugging print statements
 
@@ -45,4 +45,4 @@ writerDebug: clean tiffWriter
 
 .PHONY: clean
 clean:
-	rm -f *.o main
+	rm -f *.o main tiffWriter

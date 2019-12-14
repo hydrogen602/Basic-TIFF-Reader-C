@@ -9,3 +9,4 @@ spirals/primeSpiralsTiff
 result.txt
 tiffReader
 support/array
+tiffWriter

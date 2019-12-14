@@ -32,7 +32,7 @@ size_t getTypeSizeOf(int typeId) {
     return SIZEOF_TYPE_LOOKUP_TABLE[typeId];
 }
 
-tiffImage_t makeImage(imgType iType) {
+tiffImage_t newImage(imgType iType) {
     tiffImage_t img;
 
     img.pixelCount = 0;
@@ -51,7 +51,7 @@ tiffImage_t makeImage(imgType iType) {
         // pass, nothing to do
     }
     else {
-        fprintf(stderr, "Invalid argument in makeImage, got %d\n", iType);
+        fprintf(stderr, "Invalid argument in newImage, got %d\n", iType);
         img.type = -1;
     }
 
@@ -114,7 +114,7 @@ bool isValidImage(tiffImage_t* img) {
     return true;
 }
 
-tiffFile_t makeFile(tiffImage_t* images, size_t imagesCount) {
+tiffFile_t newFile(tiffImage_t* images, size_t imagesCount) {
     tiffFile_t file;
 
     file.byteOrder = TIFF_BIG_ENDIAN; // why this byte order? Because why not?
@@ -123,4 +123,22 @@ tiffFile_t makeFile(tiffImage_t* images, size_t imagesCount) {
     file.imagesCount = imagesCount;
 
     return file;
+}
+
+void freeImage(tiffImage_t* image) {
+    for (int i = 0; i < len(image->tags); ++i) {
+        tiffDataTag_t tag = image->tags[i];
+        if (tag.data != NULL) {
+            free(tag.data);
+        }
+    }
+    freeArray(image->tags);
+}
+
+void freeFile(tiffFile_t* file) {
+    for (int i = 0; i < file->imagesCount; ++i) {
+        freeImage(file->images + i);
+    }
+    free(file->images);
+    file->imagesCount = 0;
 }

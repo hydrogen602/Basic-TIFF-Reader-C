@@ -212,7 +212,7 @@ int _tiffReader_parseFile(tiffFile_t* t, unsigned char* buffer, unsigned int fil
     t->images = malloc(sizeof(tiffImage_t) * (t->imagesCount));
 
     for (int i = 0; i < t->imagesCount; ++i) {
-        t->images[i] = makeImage(RGB);
+        t->images[i] = newImage(RGB);
     }
 
     int result = _tiffReader_parseIFD(t->images + 0, byteOrder, ifdOffset, buffer, fileSize);
