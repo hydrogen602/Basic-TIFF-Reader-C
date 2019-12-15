@@ -43,6 +43,12 @@ writerDebug: CFLAGS += $(DEBUGGER)
 writerDebug: clean tiffWriter
 	@echo "done compiling"
 
+
+.PHONY: mainDebug
+mainDebug: CFLAGS += $(DEBUGGER)
+mainDebug: clean all
+	@echo "done compiling"
+
 .PHONY: clean
 clean:
 	rm -f *.o main tiffWriter
