@@ -34,6 +34,8 @@ void freeDataTag(tiffDataTag_t *t) {
 }
 
 void tagPrintDebug(tiffDataTag_t *t) {
+    unsigned int n1 = 0;
+    
     switch (t->tagId)
     {
         case 315: printf("Artist\n"); break;
@@ -75,8 +77,18 @@ void tagPrintDebug(tiffDataTag_t *t) {
         case 321: printf("HalftoneHints\n"); break;
         case 316: printf("HostComputer\n"); break;
         case 270: printf("ImageDescription\n"); break;
-        case 257: printf("ImageHeight\n"); break;
-        case 256: printf("ImageWidth\n"); break;
+        case 257: 
+            printf("ImageHeight: "); 
+
+            memcpy(&n1, t->data, sizeof(n1));
+            printf("%u\n", n1);
+            break;
+        case 256: 
+            printf("ImageWidth: ");
+
+            memcpy(&n1, t->data, sizeof(n1));
+            printf("%u\n", n1);
+            break;
         case 333: printf("InkNames\n"); break;
         case 332: printf("InkSet\n"); break;
         case 521: printf("JPEGACTTables\n"); break;
@@ -116,12 +128,22 @@ void tagPrintDebug(tiffDataTag_t *t) {
                 default: printf("unknown: %d\n", n2); break;
             }
             break;
-        case 284: printf("PlanarConfiguration\n"); break;
+        case 284: 
+            printf("PlanarConfiguration: ");
+
+            memcpy(&n1, t->data, sizeof(n1));
+            printf("%u\n", n1);
+            break;
         case 317: printf("Predictor\n"); break;
         case 319: printf("PrimaryChromaticities\n"); break;
         case 532: printf("ReferenceBlackWhite\n"); break;
         case 296: printf("ResolutionUnit\n"); break;
-        case 278: printf("RowsPerStrip\n"); break;
+        case 278: 
+            printf("RowsPerStrip: ");
+
+            memcpy(&n1, t->data, sizeof(n1));
+            printf("%u\n", n1);
+            break;
         case 339: printf("SampleFormat\n"); break;
         case 277: printf("SamplesPerPixel\n"); break;
         case 341: printf("SMaxSampleValue\n"); break;

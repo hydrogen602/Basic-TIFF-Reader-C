@@ -9,6 +9,8 @@
 #include "tiffReaderHelper.h"
 #include "support/array.h"
 
+#define DEBUG
+
 // apparently macros can be define with -D name
 
 bool _tiffReader_isProperHeader(uint16_t identifier, uint16_t version) {
@@ -241,10 +243,20 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 
     #ifdef DEBUG
     printf("Number of tags: %lu\n", tagCount);
-    printf("Offset: %d\n", offset);
+    //printf("Offset: %d\n", offset);
     #endif
 
     for (int i = 0; i < tagCount; i++) {
+        
+        size_t tmp = offset;
+        printf("\nTagID:  %02x %02x\n", buffer[tmp + 1], buffer[tmp]);
+        tmp += 2;
+        printf("Type:   %02x %02x\n", buffer[tmp + 1], buffer[tmp]);
+        tmp += 2;
+        printf("Count:  %02x %02x %02x %02x\n", buffer[tmp + 3], buffer[tmp + 2], buffer[tmp + 1], buffer[tmp + 0]);
+        tmp += 4;
+        printf("Offset: %02x %02x %02x %02x\n", buffer[tmp + 3], buffer[tmp + 2], buffer[tmp + 1], buffer[tmp + 0]);
+
         tiffDataTag_t * tagPtr = t->tags + i;
 
         WORD tagId = _tiffReader_read2BytesFromBuffer(byteOrder, offset, buffer, fileSize);
@@ -262,10 +274,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
         // create data tag
         // NOTE: dataTag calls malloc, must be freed with freeDataTag()
         *(tagPtr) = newDataTag(tagId, dataType, dataCount);
-        
-        #ifdef DEBUG
-        printf("Now creating data tag with id=%u, dataType=%u, dataCount=%u\n", tagId, dataType, dataCount);
-        #endif
+    
 
         /* === get data === */
 
@@ -279,7 +288,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
 
             #ifdef DEBUG
             if (tagPtr->tagId == 259) {
-                printf("addr = %x\n", tagPtr->data);
+                printf("addr = %p\n", tagPtr->data);
                 short n2;
                 memcpy(&n2, tagPtr->data, sizeof(short));
                 printf("should: %d == %u\n", n2, n);
@@ -333,7 +342,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
             if (tagPtr->tagId == 34675) { // embeded color profile
                 printf("INFO:\n");
                 printf("\tsizeof(data) = %lu\n", getTypeSizeOf(tagPtr->dataType));
-                printf("\tdata count   = %lu\n", tagPtr->dataCount);
+                printf("\tdata count   = %u\n", tagPtr->dataCount);
                 printf("\ttmpOffset    = %u\n", tmpOffset);
                 printf("\tfileSize     = %u\n", fileSize);
                 putchar('\n');
@@ -409,7 +418,7 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
                     uint64_t n = _tiffReader_read8BytesFromBuffer(byteOrder, tmpOffset, buffer, fileSize);
 
                     #ifdef DEBUG
-                    printf("%lld, ", n);
+                    printf("%ld, ", n);
                     #endif
 
                     set(n, tagPtr, index);
@@ -421,7 +430,9 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
             putchar('\n');
             #endif
         }
+
         #ifdef DEBUG
+        printf("Now creating data tag with id=%u, dataType=%u, dataCount=%u\n", tagId, dataType, dataCount);
         tagPrintDebug(tagPtr);
         #endif
 
@@ -446,24 +457,24 @@ int _tiffReader_parseIFD(tiffImage_t* t, WORD byteOrder, unsigned int offset, un
     return 0;
 }
 
-void _tiffReader_freeIFD(tiffImage_t* t) {
-    for (size_t i = 0; i < len(t->tags); ++i) {
-        freeDataTag(t->tags + i);
-    }
-    if (t->pixels != NULL) { free(t->pixels); }
-    if (t->pixelsRed != NULL) { free(t->pixelsRed); }
-    if (t->pixelsGreen!= NULL) { free(t->pixelsGreen); }
-    if (t->pixelsBlue != NULL) { free(t->pixelsBlue); }
+// void _tiffReader_freeIFD(tiffImage_t* t) {
+//     for (size_t i = 0; i < len(t->tags); ++i) {
+//         freeDataTag(t->tags + i);
+//     }
+//     if (t->pixels != NULL) { free(t->pixels); }
+//     if (t->pixelsRed != NULL) { free(t->pixelsRed); }
+//     if (t->pixelsGreen!= NULL) { free(t->pixelsGreen); }
+//     if (t->pixelsBlue != NULL) { free(t->pixelsBlue); }
     
-    free(t->tags);
-}
+//     free(t->tags);
+// }
 
-void freeFile(tiffFile_t *t) {
-    for (size_t i = 0; i < t->imagesCount; ++i) {
-        _tiffReader_freeIFD(t->images + i);
-    }
-    free(t->images);
-}
+// void freeFile(tiffFile_t *t) {
+//     for (size_t i = 0; i < t->imagesCount; ++i) {
+//         _tiffReader_freeIFD(t->images + i);
+//     }
+//     free(t->images);
+// }
 
 int readFile(const char* filename, tiffFile_t* t) {
 

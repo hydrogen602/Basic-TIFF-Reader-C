@@ -3,7 +3,8 @@
 #include "tiffImage.h"
 #include "support/array.h"
 
-#define fwriteValue(value, stream) fwrite(&(value), sizeof(value), 1, (stream))
+#define fwriteValue(value, stream) { byte * ptr = (byte*)(&(value)); for (int i = 0; i < sizeof(value); ++i) { fputc(*(ptr + i), (stream)); } }
+//  fwrite(&(value), sizeof(value), 1, (stream))//; printf("%x ", value)
 
 int ceilDivision(int a, int b) {
     // f = lambda total, rows: (total // rows) + (1 if total % rows > 0 else 0)
@@ -134,8 +135,11 @@ int __createMiscTags(tiffImage_t* t) {
     }
     else {
         tiffDataTag_t tag = newDataTag(XResolution, RATIONAL_TypeID, 1);
-        RATIONAL rat = { 10 / 1 };
-        set(rat, &tag, 0);
+        RATIONAL rat = { 3 / 1 };
+        
+        DWORD * ptr = (DWORD*) tag.data;
+        ptr[0] = rat.num;
+        ptr[1] = rat.denom;
 
         append(t->tags, tag);
     }
@@ -146,8 +150,11 @@ int __createMiscTags(tiffImage_t* t) {
     }
     else {
         tiffDataTag_t tag = newDataTag(YResolution, RATIONAL_TypeID, 1);
-        RATIONAL rat = { 10 / 1 };
-        set(rat, &tag, 0);
+        RATIONAL rat = { 3 / 1 };
+        
+        DWORD * ptr = (DWORD*) tag.data;
+        ptr[0] = rat.num;
+        ptr[1] = rat.denom;
 
         append(t->tags, tag);
     }
@@ -159,7 +166,9 @@ int __createMiscTags(tiffImage_t* t) {
     else {
         tiffDataTag_t tag = newDataTag(ResolutionUnit, SHORT_TypeID, 1);
         SHORT n = 3; // 1 = none, 2 = inch, 3 = cm
-        set(n, &tag, 0);
+
+        SHORT * ptr = (SHORT*) tag.data;
+        ptr[0] = n;
 
         append(t->tags, tag);
     }
@@ -314,8 +323,8 @@ int _tiffWriter_openFileAndWrite(const char* filename, unsigned char* buffer) {
     return 0;
 }
 
-int imageWrite(tiffFile_t tf, const char * filename) {
-    if (tf.imagesCount != 0) {
+int imageWriter(tiffFile_t tf, const char * filename) {
+    if (tf.imagesCount != 1) {
         printErrMsg("Unsupported. Must have one and only one image in file");
         return -1;
     }
@@ -325,7 +334,7 @@ int imageWrite(tiffFile_t tf, const char * filename) {
         return -1;
     }
 
-    FILE * f = open(filename, "wb");
+    FILE * f = fopen(filename, "wb");
     if (f == NULL) {
         printErrMsg("File opening failed");
         return -1;
@@ -341,9 +350,15 @@ int imageWrite(tiffFile_t tf, const char * filename) {
 
     fwriteValue(version, f);
 
-    // write image data
-
     tiffImage_t img = tf.images[0];
+
+    uint32_t offsetIFD = TIFF_HEADER_LENGTH + ((img.type == RGB) ? 3 * img.height * img.width : img.height * img.width);
+
+    fwriteValue(offsetIFD, f);
+
+    printf("offsetIFD = 0x%x\n", offsetIFD);
+
+    // write image data
 
     if (img.type == RGB) {
         tiffDataTag_t* tag = findTag(PlanarConfiguration, img.tags);
@@ -378,9 +393,14 @@ int imageWrite(tiffFile_t tf, const char * filename) {
         return -1;
     }
 
-    byte tagBuffer[12];
+    // tags
 
-    size_t locationAfter = len(img.tags) + TIFF_HEADER_LENGTH;
+    uint16_t s = len(img.tags);
+    fwriteValue(s, f);
+
+    //byte tagBuffer[12];
+
+    size_t locationAfter = len(img.tags) * 12UL + TIFF_HEADER_LENGTH + 2UL + 4UL; // 2UL for tag count, 4UL for next IFD offset
     locationAfter += (img.type == RGB) ? 3 * img.height * img.width : img.height * img.width;
 
     byte* extraData = newBuffer(0);
@@ -388,12 +408,23 @@ int imageWrite(tiffFile_t tf, const char * filename) {
     for (int i = 0; i < len(img.tags); ++i) {
         tiffDataTag_t tag = img.tags[i];
 
-        memcpy(tagBuffer, tag.tagId, sizeof(tag.tagId));
-        memcpy(tagBuffer + sizeof(WORD), tag.dataType, sizeof(tag.dataType));
-        memcpy(tagBuffer + 2*sizeof(WORD), tag.dataCount, sizeof(tag.dataCount));
+        tagPrintDebug(&tag);
+
+        if (tag.tagId == 0x11b) {
+            // to do
+            printf("hi\n");
+        }
+
+        fwriteValue(tag.tagId, f);
+        fwriteValue(tag.dataType, f);
+        fwriteValue(tag.dataCount, f);
+
+        //memcpy(tagBuffer, &(tag.tagId), sizeof(tag.tagId));
+        //memcpy(tagBuffer + sizeof(WORD), &(tag.dataType), sizeof(tag.dataType));
+        //memcpy(tagBuffer + 2*sizeof(WORD), &(tag.dataCount), sizeof(tag.dataCount));
 
         DWORD dataOffset = 0;
-        if (getTypeSizeOf(tag.dataType) < 2 && tag.dataCount == 1) {
+        if (getTypeSizeOf(tag.dataType) <= 4 && tag.dataCount == 1) {
             dataOffset = *(tag.data);
         }
         else {
@@ -402,13 +433,23 @@ int imageWrite(tiffFile_t tf, const char * filename) {
             extraData = checkBufferIndex(extraData, currLen, getTypeSizeOf(tag.dataType) * tag.dataCount);
             memcpy(extraData + currLen, tag.data, getTypeSizeOf(tag.dataType) * tag.dataCount);
         }
+        fwriteValue(dataOffset, f);
 
-        memcpy(tagBuffer + 2*sizeof(WORD) + sizeof(DWORD), dataOffset, sizeof(dataOffset));
 
-        fwrite(tagBuffer, sizeof(tagBuffer), 1, f);
+
+        //memcpy(tagBuffer + 2*sizeof(WORD) + sizeof(DWORD), &dataOffset, sizeof(dataOffset));
+
+        //fwrite(tagBuffer, sizeof(tagBuffer), 1, f);
+
+
     }
 
+    uint32_t n = 0;
+
+    fwrite(&n, sizeof(uint32_t), 1, f); // next IFD offset
+
     fwrite(extraData, len(extraData), 1, f);
+
 
     fclose(f);
     return 0;
@@ -427,9 +468,15 @@ int main(void) {
     img.height = 100;
     img.width = 100;
 
-    img.pixelsBlue = malloc(100 * 100);
-    img.pixelsGreen = malloc(100 * 100);
-    img.pixelsRed = malloc(100 * 100);
+    img.pixelsBlue = newArray(100 * 100, 1);
+    img.pixelsGreen = newArray(100 * 100, 1);
+    img.pixelsRed = newArray(100 * 100, 1);
+
+    for (int i = 1; i < 10000; ++i) {
+        img.pixelsRed[i] = 0xff;
+        img.pixelsGreen[i] = 0xff;
+        img.pixelsBlue[i] = 0xff;
+    }
 
     int r = createMissingTags(&img);
     if (r != 0) {
