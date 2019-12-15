@@ -107,8 +107,8 @@ void* checkIndex(void* ptr, size_t index) {
             }
             else {
                 // expand memory block
-                printf("Expanding to %lu\n", ead->maxLen * 2);
-                printf("index = %ld\n", index);
+                //printf("Expanding to %lu\n", ead->maxLen * 2);
+                //printf("index = %ld\n", index);
                 void* ptrNew = __newExpandableArray(p->len + 1, ead->elementSize, ead->maxLen * 2);
                 memcpy(ptrNew, ptr, p->len * ead->elementSize);
                 freeArray(ptr);
@@ -151,9 +151,11 @@ byte* checkBufferIndex(byte* ptr, size_t offset, size_t elementSize) {
                     newSize *= 2;
                 } while(newSize <= offset + elementSize);
                 
-                printf("Expanding to %lu\n", newSize);
-                printf("offset = %ld\n", offset);
-                void* ptrNew = __newExpandableArray(p->len + 1, ead->elementSize, ead->maxLen * 2);
+                //printf("Expanding to %lu\n", newSize);
+                //printf("offset = %ld\n", offset);
+                long n = offset + elementSize;
+
+                void* ptrNew = __newBuffer(n, ead->maxLen * 2);
                 // change ptr
                 memcpy(ptrNew, ptr, p->len * ead->elementSize);
                 freeArray(ptr);

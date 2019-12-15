@@ -188,7 +188,7 @@ typedef struct _TifTagData
 {
     WORD tagId;          /* The tag identifier  */
     WORD dataType;       // type id
-    size_t dataCount;    // length of array
+    DWORD dataCount;    // length of array
 
     // data, use malloc & free, kinda like a void ptr
     unsigned char *data; 

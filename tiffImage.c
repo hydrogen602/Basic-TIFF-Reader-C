@@ -27,7 +27,10 @@ const int required_gray_tags[] = GRAY_SCALE_TAGS;
 const int required_rgb_tags[] = RGB_TAGS;
 
 size_t getTypeSizeOf(int typeId) {
-    assertEx(typeId > 0 && typeId <= NUMBER_OF_TYPES, "ArrayIndexOutOfBoudsException: %d\n", typeId);
+    if (typeId <= 0 && typeId > NUMBER_OF_TYPES) {
+        fprintf(stderr, "ArrayIndexOutOfBoudsException: %d at %d in %s\n", typeId, __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+    }
     
     return SIZEOF_TYPE_LOOKUP_TABLE[typeId];
 }
